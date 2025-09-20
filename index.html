@@ -1,19 +1,118 @@
-<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Car World Colosseum</title>
-<link rel="stylesheet" href="style.css">
-<div class="wrap">
-  <h1>Car World Colosseum</h1>
+<style>
+  :root{
+    --bg:#0E0F11; --text:#E8EAED; --muted:#A9ACB3; --line:rgba(255,255,255,.08);
+    --card:rgba(255,255,255,.04); --cardHover:rgba(255,255,255,.07);
+  }
+  html,body{height:100%}
+  *{box-sizing:border-box}
+  body{margin:0;color:var(--text);background:
+    radial-gradient(1200px 600px at 100% -10%, rgba(27,85,106,.25), transparent 60%),
+    radial-gradient(900px 500px at -10% 110%, rgba(110,34,69,.22), transparent 60%),
+    var(--bg);
+    font:16px/1.55 system-ui,-apple-system,Segoe UI,Roboto,Inter,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+  }
+  a{color:inherit}
+  .container{max-width:1120px;margin:0 auto;padding:0 20px}
 
-  <figure class="card">
-    <a href="MagwadiExample.png"><img src="MagwadiExample.png" alt="Magwadi example art"></a>
-    <figcaption>Magwadi — concept art</figcaption>
-  </figure>
+  /* Header */
+  header{position:sticky;top:0;z-index:50;backdrop-filter:blur(12px);background:rgba(14,15,17,.55);border-bottom:1px solid var(--line)}
+  .nav{display:flex;align-items:center;justify-content:space-between;height:60px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.4px}
+  .logo{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#10b981,#0ea5e9);color:#041016;font-weight:900}
+  .nav-right{opacity:.9;font-size:.92rem}
+  .nav-right a{padding:8px 10px;border:1px solid var(--line);border-radius:10px;text-decoration:none}
 
-  <figure class="card">
-    <a href="Hungry.png"><img src="Hungry.png" alt="Hungry character art"></a>
-    <figcaption>Hungry — character art</figcaption>
-  </figure>
+  /* Hero */
+  .hero{position:relative;min-height:62vh;display:grid;place-items:center;border-bottom:1px solid var(--line)}
+  .hero::before{content:"";position:absolute;inset:0;background:url('MagwadiExample.png') center/cover no-repeat;filter:brightness(.6) saturate(1.05)}
+  .hero::after{content:"";position:absolute;inset:0;background:radial-gradient(80% 60% at 50% 40%,transparent,rgba(0,0,0,.45) 60%,rgba(0,0,0,.65))}
+  .hero-inner{position:relative;text-align:center;padding:56px 20px}
+  h1{font-size:clamp(32px,6vw,56px);margin:0 0 10px;font-weight:800;letter-spacing:.2px}
+  .sub{color:var(--muted);font-size:clamp(14px,2.6vw,18px)}
 
-  <p style="text-align:center;color:#666;margin-top:40px">A fast, strategic card game set in a fantasy-mechanical realm.</p>
-  <footer style="text-align:center;color:#999;font-size:.85rem;margin-top:16px">contact: you@example.com</footer>
-</div>
+  /* Gallery */
+  .gallery{padding:34px 0}
+  .card{max-width:min(94vw,1040px);margin:28px auto;background:var(--card);border:1px solid var(--line);border-radius:20px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.35);transition:background .2s ease}
+  .card:hover{background:var(--cardHover)}
+  .frame{display:block}
+  .img{width:100%;height:auto;display:block;aspect-ratio:auto;}
+  .note{display:none}
+
+  /* Footer */
+  footer{border-top:1px solid var(--line)}
+  .foot{height:72px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:.92rem}
+  .foot a{color:var(--text);opacity:.9;text-decoration:none;border-bottom:1px dotted var(--line)}
+
+  @media (prefers-reduced-motion:no-preference){
+    html{scroll-behavior:smooth}
+  }
+</style>
+<body>
+  <header>
+    <div class="container nav">
+      <div class="brand"><span class="logo">C</span> Car World Colosseum</div>
+      <div class="nav-right"><a href="#gallery">Scroll</a></div>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="hero-inner container">
+        <h1>Build Machines. Start Brawls.</h1>
+        <div class="sub">A sleek preview of CWC artwork — scroll to explore.</div>
+      </div>
+    </section>
+
+    <section id="gallery" class="gallery">
+      <!-- JS will populate repeating image cards here for an endless feel -->
+    </section>
+  </main>
+
+  <footer>
+    <div class="foot container">contact: <a href="mailto:attendant@carworldcolosseum.com" style="margin-left:.4rem">attendant@carworldcolosseum.com</a></div>
+  </footer>
+
+<script>
+(function(){
+  const gallery = document.getElementById('gallery');
+  const sources = [ 'MagwadiExample.png', 'Hungry.png' ];
+  let next = 0;
+
+  function addCard(){
+    const src = sources[next++ % sources.length];
+    const fig = document.createElement('figure');
+    fig.className = 'card';
+    const a = document.createElement('a');
+    a.href = src; a.className = 'frame'; a.setAttribute('target','_blank');
+    const img = document.createElement('img');
+    img.className = 'img'; img.src = src; img.alt = ''; img.loading = 'lazy'; img.decoding = 'async';
+    a.appendChild(img); fig.appendChild(a); gallery.appendChild(fig);
+  }
+
+  // Seed a few rows
+  for(let i=0;i<8;i++) addCard();
+
+  // Sentinel for infinite append
+  const sentinel = document.createElement('div');
+  sentinel.style.height = '1px';
+  gallery.appendChild(sentinel);
+
+  const io = new IntersectionObserver(entries => {
+    for (const e of entries){
+      if (e.isIntersecting){
+        for(let i=0;i<6;i++) addCard();
+        gallery.appendChild(sentinel); // move sentinel to end again
+      }
+    }
+  }, { rootMargin: '1200px' });
+  io.observe(sentinel);
+})();
+</script>
+</body>
+</html>
