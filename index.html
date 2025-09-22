@@ -29,7 +29,7 @@
   .nav-right a{padding:8px 10px;border:1px solid var(--line);border-radius:10px;text-decoration:none}
 
   /* Hero */
-  .hero{position:relative;min-height:62vh;display:grid;place-items:center;border-bottom:1px solid var(--line)}
+  .hero{position:relative;min-height:80vh;display:grid;place-items:center;border-bottom:1px solid var(--line)}
   .hero::before{content:"";position:absolute;inset:0;background:url('MagwadiExample.png') center/cover no-repeat;filter:brightness(.6) saturate(1.05)}
   .hero::after{content:"";position:absolute;inset:0;background:radial-gradient(80% 60% at 50% 40%,transparent,rgba(0,0,0,.45) 60%,rgba(0,0,0,.65))}
   .hero-inner{position:relative;text-align:center;padding:56px 20px}
@@ -59,11 +59,35 @@
   #belt{ display:flex; will-change:transform }
   .slide{ flex:0 0 auto; margin-right:var(--gap); border:1px solid var(--line); border-radius:18px; overflow:hidden; background:var(--card); box-shadow:0 10px 40px rgba(0,0,0,.35) }
   .slide img{ display:block; height:clamp(220px,50vh,520px); width:auto }
+  /* Dropdown menu */
+  .dropdown{position:relative;display:inline-block;margin-left:10px}
+  .menu-btn{padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--text);cursor:pointer}
+  .menu{position:absolute;right:0;top:110%;min-width:160px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:6px;display:none;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+  .menu.open{display:block}
+  .menu a{display:block;padding:10px 12px;border-radius:8px;text-decoration:none}
+  .menu a:hover{background:var(--cardHover)}
 </style>
 <body>
   
 
-  <main>
+  <header>
+  <div class="container nav">
+    <div></div>
+    <div class="nav-right">
+      <a href="https://www.instagram.com/carworld.nyc/?hl=en" target="_blank" rel="noopener">Instagram</a>
+      <span class="dropdown">
+        <button class="menu-btn" aria-expanded="false" aria-controls="menu">Menu ▾</button>
+        <div id="menu" class="menu" role="menu">
+          <a href="#" role="menuitem">About</a>
+          <a href="#" role="menuitem">Rules</a>
+          <a href="#" role="menuitem">Gallery</a>
+        </div>
+      </span>
+    </div>
+  </div>
+</header>
+
+<main>
     <section class="hero">
       <div class="hero-inner container">
         <h1>Car World Colosseum</h1>
@@ -86,42 +110,49 @@
 (function(){
   const belt = document.getElementById('belt');
   const sources = ['MagwadiExample.png','Hungry.png'];
-  const repeats = 8; // fill the belt for seamless loop
+  const repeats = 8;
   for (let i=0;i<repeats*sources.length;i++){
     const src = sources[i % sources.length];
     const a = document.createElement('a');
     a.href = src; a.target = '_blank'; a.className='slide';
     const img = document.createElement('img');
     img.src = src; img.alt = ''; img.loading='lazy'; img.decoding='async';
-    a.appendChild(img);
-    belt.appendChild(a);
+    a.appendChild(img); belt.appendChild(a);
   }
-
-  let offset = 0;
-  let speed = 0.6; // px per frame; hover to pause
-
+  let offset = 0, speed = 0.6;
   function step(){
-    offset -= speed;
-    belt.style.transform = 'translateX(' + offset + 'px)';
+    offset -= speed; belt.style.transform = 'translateX(' + offset + 'px)';
     const first = belt.children[0];
     if (first){
       const rect = first.getBoundingClientRect();
       const gap = parseFloat(getComputedStyle(first).marginRight) || 0;
       const w = rect.width + gap;
-      if (-offset >= w){
-        belt.appendChild(first);
-        offset += w;
-        belt.style.transform = 'translateX(' + offset + 'px)';
-      }
+      if (-offset >= w){ belt.appendChild(first); offset += w; belt.style.transform = 'translateX(' + offset + 'px)'; }
     }
     requestAnimationFrame(step);
   }
-
   const gallery = document.getElementById('gallery');
   gallery.addEventListener('mouseenter', ()=> speed = 0);
   gallery.addEventListener('mouseleave', ()=> speed = 0.6);
-
   requestAnimationFrame(step);
+})();
+
+// dropdown toggle
+(function(){
+  const btn = document.querySelector('.menu-btn');
+  const menu = document.getElementById('menu');
+  if(!btn||!menu) return;
+  btn.addEventListener('click', (e)=>{
+    e.stopPropagation();
+    const open = menu.classList.toggle('open');
+    btn.setAttribute('aria-expanded', open ? 'true':'false');
+  });
+  document.addEventListener('click', (e)=>{
+    if(!menu.contains(e.target) && !btn.contains(e.target)){
+      menu.classList.remove('open');
+      btn.setAttribute('aria-expanded','false');
+    }
+  });
 })();
 </script>
 </body>
