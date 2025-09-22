@@ -29,7 +29,7 @@
   .nav-right a{padding:8px 10px;border:1px solid var(--line);border-radius:10px;text-decoration:none}
 
   /* Hero */
-  .hero{position:relative;min-height:100vh;display:grid;place-items:center;border-bottom:1px solid var(--line)}
+  .hero{position:relative;min-height:100svh;display:grid;place-items:center;border-bottom:1px solid var(--line)}
   .hero::before{content:"";position:absolute;inset:0;background:url('MagwadiExample.png') center/contain no-repeat;filter:brightness(.85) saturate(1.05)}
   .hero::after{content:"";position:absolute;inset:0;background:radial-gradient(80% 60% at 50% 40%,transparent,rgba(0,0,0,.22) 60%,rgba(0,0,0,.33))}
   .hero-inner{position:relative;text-align:center;padding:56px 20px}
@@ -55,7 +55,7 @@
   /* Horizontal carousel */
   :root{ --gap:24px }
   .xgallery{ padding:34px 0; overflow:hidden }
-  .xgallery .container{ overflow:hidden }
+  .xgallery .container{ overflow:hidden; position:relative }
   #belt{ display:flex; will-change:transform }
   .slide{ flex:0 0 auto; margin-right:var(--gap); border:1px solid var(--line); border-radius:18px; overflow:hidden; background:var(--card); box-shadow:0 10px 40px rgba(0,0,0,.35) }
   .slide img{ display:block; height:clamp(220px,50vh,520px); width:auto }
@@ -68,6 +68,12 @@
   .menu a:hover{background:var(--cardHover)}
   /* Title offset */
   .hero-title{position:relative;top:-2in;left:-2in;text-align:left}
+  /* Carousel controls */
+  .controls{position:absolute;inset:0;pointer-events:none}
+  .btn-nav{position:absolute;top:50%;transform:translateY(-50%);width:44px;height:44px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.12);backdrop-filter:blur(6px);color:#fff;font-size:22px;line-height:44px;text-align:center;cursor:pointer;pointer-events:auto}
+  .btn-nav:hover{background:rgba(255,255,255,.18)}
+  .btn-nav.prev{left:10px}
+  .btn-nav.next{right:10px}
 </style>
 <body>
   
@@ -95,6 +101,10 @@
     <section id="gallery" class="xgallery">
   <div class="container">
     <div id="belt"></div>
+    <div class="controls">
+      <button class="btn-nav prev" aria-label="Previous">‹</button>
+      <button class="btn-nav next" aria-label="Next">›</button>
+    </div>
   </div>
 </section>
   </main>
@@ -151,6 +161,46 @@
     }
   });
 })();
-</script>
+
+// carousel next/prev
+(function(){
+  const belt = document.getElementById('belt');
+  const prev = document.querySelector('.btn-nav.prev');
+  const next = document.querySelector('.btn-nav.next');
+  if(!belt||!prev||!next) return;
+
+  let animating = false;
+  function slideWidth(){
+    const first = belt.children[0];
+    if(!first) return 0;
+    const styles = getComputedStyle(first);
+    return first.getBoundingClientRect().width + parseFloat(styles.marginRight||0);
+  }
+
+  function animateTo(target, cb){
+    if(animating) return; animating = true;
+    const start = performance.now();
+    const from = parseFloat(belt.style.transform.replace(/[^-\d.]/g,'')||0);
+    const delta = target - from;
+    const dur = 220;
+    function tick(t){
+      const k = Math.min(1,(t-start)/dur);
+      const ease = k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2; // ease-in-out
+      const val = from + delta*ease;
+      belt.style.transform = 'translateX('+val+'px)';
+      if(k<1) requestAnimationFrame(tick); else { animating=false; cb&&cb(); }
+    }
+    requestAnimationFrame(tick);
+  }
+
+  next.addEventListener('click', ()=>{
+    const w = slideWidth(); if(!w) return;
+    animateTo(-w, ()=>{ belt.appendChild(belt.children[0]); belt.style.transform='translateX(0px)'; });
+  });
+
+  prev.addEventListener('click', ()=>{
+    const w = slideWidth(); if(!w) return;
+    belt.insertBefore(belt.lastElementChild, belt.firstElementChild);
+    belt.style.transform = 'translat
 </body>
 </html>
