@@ -52,6 +52,13 @@
   @media (prefers-reduced-motion:no-preference){
     html{scroll-behavior:smooth}
   }
+  /* Horizontal carousel */
+  :root{ --gap:24px }
+  .xgallery{ padding:34px 0; overflow:hidden }
+  .xgallery .container{ overflow:hidden }
+  #belt{ display:flex; will-change:transform }
+  .slide{ flex:0 0 auto; margin-right:var(--gap); border:1px solid var(--line); border-radius:18px; overflow:hidden; background:var(--card); box-shadow:0 10px 40px rgba(0,0,0,.35) }
+  .slide img{ display:block; height:clamp(220px,50vh,520px); width:auto }
 </style>
 <body>
   
@@ -64,9 +71,11 @@
       </div>
     </section>
 
-    <section id="gallery" class="gallery">
-      <!-- JS will populate repeating image cards here for an endless feel -->
-    </section>
+    <section id="gallery" class="xgallery">
+  <div class="container">
+    <div id="belt"></div>
+  </div>
+</section>
   </main>
 
   <footer>
@@ -75,38 +84,44 @@
 
 <script>
 (function(){
-  const gallery = document.getElementById('gallery');
-  const sources = [ 'MagwadiExample.png', 'Hungry.png' ];
-  let next = 0;
-
-  function addCard(){
-    const src = sources[next++ % sources.length];
-    const fig = document.createElement('figure');
-    fig.className = 'card';
+  const belt = document.getElementById('belt');
+  const sources = ['MagwadiExample.png','Hungry.png'];
+  const repeats = 8; // fill the belt for seamless loop
+  for (let i=0;i<repeats*sources.length;i++){
+    const src = sources[i % sources.length];
     const a = document.createElement('a');
-    a.href = src; a.className = 'frame'; a.setAttribute('target','_blank');
+    a.href = src; a.target = '_blank'; a.className='slide';
     const img = document.createElement('img');
-    img.className = 'img'; img.src = src; img.alt = ''; img.loading = 'lazy'; img.decoding = 'async';
-    a.appendChild(img); fig.appendChild(a); gallery.appendChild(fig);
+    img.src = src; img.alt = ''; img.loading='lazy'; img.decoding='async';
+    a.appendChild(img);
+    belt.appendChild(a);
   }
 
-  // Seed a few rows
-  for(let i=0;i<8;i++) addCard();
+  let offset = 0;
+  let speed = 0.6; // px per frame; hover to pause
 
-  // Sentinel for infinite append
-  const sentinel = document.createElement('div');
-  sentinel.style.height = '1px';
-  gallery.appendChild(sentinel);
-
-  const io = new IntersectionObserver(entries => {
-    for (const e of entries){
-      if (e.isIntersecting){
-        for(let i=0;i<6;i++) addCard();
-        gallery.appendChild(sentinel); // move sentinel to end again
+  function step(){
+    offset -= speed;
+    belt.style.transform = 'translateX(' + offset + 'px)';
+    const first = belt.children[0];
+    if (first){
+      const rect = first.getBoundingClientRect();
+      const gap = parseFloat(getComputedStyle(first).marginRight) || 0;
+      const w = rect.width + gap;
+      if (-offset >= w){
+        belt.appendChild(first);
+        offset += w;
+        belt.style.transform = 'translateX(' + offset + 'px)';
       }
     }
-  }, { rootMargin: '1200px' });
-  io.observe(sentinel);
+    requestAnimationFrame(step);
+  }
+
+  const gallery = document.getElementById('gallery');
+  gallery.addEventListener('mouseenter', ()=> speed = 0);
+  gallery.addEventListener('mouseleave', ()=> speed = 0.6);
+
+  requestAnimationFrame(step);
 })();
 </script>
 </body>
