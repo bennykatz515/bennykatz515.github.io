@@ -26,11 +26,13 @@
   .menu a{display:block;padding:10px 12px;border-radius:8px;text-decoration:none}
   .menu a:hover{background:var(--glass)}
 
-  /* Hero with full image visible */
-  .hero{position:relative;min-height:100svh;border-bottom:1px solid var(--line);display:grid;place-items:center;text-align:center;opacity:1;transition:opacity .2s ease}
+  /* Hero fixed, overlays the page and fades out on scroll */
+  .hero{position:fixed;inset:0;height:100svh;display:grid;place-items:center;text-align:center;opacity:1;transition:opacity .2s ease;pointer-events:none;z-index:20}
   .hero::before{content:"";position:absolute;inset:0;background:url('MagwadiExample.png') center/contain no-repeat;filter:brightness(.85) saturate(1.05)}
   .hero::after{content:"";position:absolute;inset:0;background:radial-gradient(80% 60% at 50% 40%,transparent,rgba(0,0,0,.22) 60%,rgba(0,0,0,.33))}
   .hero h1{position:relative;font-size:clamp(32px,6vw,56px);margin:0;font-weight:800;letter-spacing:.2px}
+  /* Spacer to push content below the overlaid hero */
+  .hero-spacer{height:100svh}
 
   /* Horizontal gallery */
   .xgallery{padding:34px 0}
@@ -67,6 +69,7 @@
     <section class="hero" id="hero">
       <h1>Car World Colosseum</h1>
     </section>
+    <div class="hero-spacer" aria-hidden="true"></div>
 
     <section id="gallery" class="xgallery">
       <div class="container">
@@ -102,21 +105,21 @@
   });
 })();
 
-// Fade hero on scroll
+// Fade hero on scroll (fixed overlay)
 (function(){
   const hero = document.getElementById('hero');
   if(!hero) return;
   function onScroll(){
-    const h = hero.getBoundingClientRect().height || window.innerHeight;
+    const h = window.innerHeight || hero.getBoundingClientRect().height;
     const y = window.scrollY || window.pageYOffset;
-    const t = Math.min(1, Math.max(0, y / (h*0.8))); // fade out by ~80% of hero height
+    const t = Math.min(1, Math.max(0, y / (h * 0.9))); // fade by ~90% of viewport height
     hero.style.opacity = String(1 - t);
   }
   window.addEventListener('scroll', onScroll, {passive:true});
   window.addEventListener('load', onScroll);
 })();
 
-// Autoscroll gallery with centering controls (reverted, stable)
+// Autoscroll gallery with centering controls (stable)
 (function(){
   const belt = document.getElementById('belt');
   const container = belt.parentElement;
