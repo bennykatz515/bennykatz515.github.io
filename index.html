@@ -28,8 +28,9 @@
 
   /* Hero fixed, overlays the page and fades out on scroll */
   .hero{position:fixed;inset:0;height:100svh;display:grid;place-items:center;text-align:center;opacity:1;will-change:transform;transition:transform .2s ease;pointer-events:none;z-index:20}
-  .hero::before{content:"";position:absolute;inset:0;background:url('MagwadiExample.png') center/contain no-repeat;filter:brightness(.85) saturate(1.05)}
+  .hero::before{content:"";position:absolute;inset:0;background:url('MagwadiExample.png') center/cover no-repeat;filter:brightness(.9) saturate(1.05) blur(12px)}
   .hero::after{content:"";position:absolute;inset:0;background:radial-gradient(80% 60% at 50% 40%,transparent,rgba(0,0,0,.22) 60%,rgba(0,0,0,.33))}
+  .hero .art{position:absolute;inset:0;background:url('MagwadiExample.png') center/contain no-repeat;z-index:1}
   .hero h1{position:relative;font-size:clamp(32px,6vw,56px);margin:0;font-weight:800;letter-spacing:.2px;transform:translate(-16px,-16px)}
   /* Spacer to push content below the overlaid hero */
   .hero-spacer{height:100svh}
@@ -67,6 +68,7 @@
 
   <main>
     <section class="hero" id="hero">
+      <div class="art" aria-hidden="true"></div>
       <h1>Car World Colosseum</h1>
     </section>
     <div class="hero-spacer" aria-hidden="true"></div>
