@@ -3,90 +3,160 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Car World Colosseum</title>
-<link rel="icon" href="/favicon.png">
 <style>
-  :root{--bg:#0e0f11;--text:#e8eaed;--muted:#a9acb3;--line:rgba(255,255,255,.08);--card:rgba(255,255,255,.05)}
-  *{box-sizing:border-box}
+  :root{
+    --bg:#0E0F11; --text:#E8EAED; --muted:#A9ACB3; --line:rgba(255,255,255,.08);
+    --card:rgba(255,255,255,.04); --cardHover:rgba(255,255,255,.07);
+  }
   html,body{height:100%}
-  body{margin:0;background:radial-gradient(900px 500px at 100% -10%,rgba(27,85,106,.25),transparent 60%),radial-gradient(900px 500px at -10% 110%,rgba(110,34,69,.22),transparent 60%),var(--bg);color:var(--text);font:16px/1.55 system-ui,-apple-system,Segoe UI,Roboto,Inter,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
-  header{position:sticky;top:0;z-index:10;background:transparent;text-align:center;padding:24px 16px}
-  h1{margin:0;font-size:clamp(28px,5vw,44px);font-weight:800;letter-spacing:.2px}
+  *{box-sizing:border-box}
+  body{margin:0;color:var(--text);background:
+    radial-gradient(1200px 600px at 100% -10%, rgba(27,85,106,.25), transparent 60%),
+    radial-gradient(900px 500px at -10% 110%, rgba(110,34,69,.22), transparent 60%),
+    var(--bg);
+    font:16px/1.55 system-ui,-apple-system,Segoe UI,Roboto,Inter,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+  }
+  a{color:inherit}
+  .container{max-width:1120px;margin:0 auto;padding:0 20px}
 
-  /* horizontal gallery */
-  .stage{position:relative;overflow:hidden;padding:28px 0}
-  #belt{display:flex;will-change:transform}
-  .slide{flex:0 0 auto;margin-right:24px;border:1px solid var(--line);border-radius:18px;overflow:hidden;background:var(--card);box-shadow:0 10px 40px rgba(0,0,0,.35)}
-  .slide img{display:block;height:clamp(220px,60svh,620px);width:auto}
+  /* Header */
+  header{position:fixed;top:12px;right:16px;z-index:60;background:transparent;border:0;backdrop-filter:none}
+  .nav{display:flex;align-items:center;justify-content:space-between;height:60px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.4px}
+  .logo{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#10b981,#0ea5e9);color:#041016;font-weight:900}
+  .nav-right{opacity:.9;font-size:.92rem}
+  .nav-right a{padding:8px 10px;border:1px solid var(--line);border-radius:10px;text-decoration:none}
 
-  /* nav buttons */
+  /* Hero */
+  .hero{position:relative;min-height:100svh;display:grid;place-items:center;border-bottom:1px solid var(--line)}
+  .hero::before{content:"";position:absolute;inset:0;background:url('MagwadiExample.png') center/contain no-repeat;filter:brightness(.85) saturate(1.05)}
+  .hero::after{content:"";position:absolute;inset:0;background:radial-gradient(80% 60% at 50% 40%,transparent,rgba(0,0,0,.22) 60%,rgba(0,0,0,.33))}
+  .hero-inner{position:relative;text-align:center;padding:56px 20px}
+  h1{font-size:clamp(32px,6vw,56px);margin:0 0 10px;font-weight:800;letter-spacing:.2px}
+  .sub{color:var(--muted);font-size:clamp(14px,2.6vw,18px)}
+
+  /* Gallery */
+  .gallery{padding:34px 0}
+  .card{max-width:min(94vw,1040px);margin:28px auto;background:var(--card);border:1px solid var(--line);border-radius:20px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.35);transition:background .2s ease}
+  .card:hover{background:var(--cardHover)}
+  .frame{display:block}
+  .img{width:100%;height:auto;display:block;aspect-ratio:auto;}
+  .note{display:none}
+
+  /* Footer */
+  footer{border-top:1px solid var(--line)}
+  .foot{height:72px;display:flex;align-items:center;justify-content:center;color:var(--text);font-size:.92rem}
+  .foot a{color:var(--text);opacity:.9;text-decoration:none;border-bottom:1px dotted var(--line)}
+
+  @media (prefers-reduced-motion:no-preference){
+    html{scroll-behavior:smooth}
+  }
+  /* Horizontal carousel */
+  :root{ --gap:24px }
+  .xgallery{ padding:34px 0; overflow:hidden }
+  .xgallery .container{ overflow:hidden; position:relative }
+  #belt{ display:flex; will-change:transform; transition: transform .3s cubic-bezier(.4,0,.2,1) }
+  .slide{ flex:0 0 auto; margin-right:var(--gap); border:1px solid var(--line); border-radius:18px; overflow:hidden; background:var(--card); box-shadow:0 10px 40px rgba(0,0,0,.35) }
+  .slide img{ display:block; height:clamp(220px,50vh,520px); width:auto }
+  /* Dropdown menu */
+  .dropdown{position:relative;display:inline-block;margin-left:10px}
+  .menu-btn{padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--text);cursor:pointer}
+  .menu{position:absolute;right:0;top:110%;min-width:160px;background:#121317;border:1px solid var(--line);border-radius:12px;padding:6px;display:none;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+  .menu.open{display:block}
+  .menu a{display:block;padding:10px 12px;border-radius:8px;text-decoration:none}
+  .menu a:hover{background:var(--cardHover)}
+  /* Title offset */
+  .hero-title{position:relative;top:-2in;left:-2in;text-align:left}
+  /* Carousel controls */
   .controls{position:absolute;inset:0;pointer-events:none}
-  .btn{position:absolute;top:50%;transform:translateY(-50%);width:44px;height:44px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.12);backdrop-filter:blur(6px);color:#fff;font-size:22px;line-height:44px;text-align:center;cursor:pointer;pointer-events:auto}
-  .btn:hover{background:rgba(255,255,255,.18)}
-  .btn.prev{left:10px} .btn.next{right:10px}
-
-  footer{border-top:1px solid var(--line);margin-top:24px}
-  .foot{height:72px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:.92rem}
-  .foot a{color:var(--text);text-decoration:none;border-bottom:1px dotted var(--line)}
+  .btn-nav{position:absolute;top:50%;transform:translateY(-50%);width:44px;height:44px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.12);backdrop-filter:blur(6px);color:#fff;font-size:22px;line-height:44px;text-align:center;cursor:pointer;pointer-events:auto}
+  .btn-nav:hover{background:rgba(255,255,255,.18)}
+  .btn-nav.prev{left:10px}
+  .btn-nav.next{right:10px}
 </style>
 <body>
-  <header><h1>Car World Colosseum</h1></header>
-  <main>
-    <section class="stage">
-      <div id="belt"></div>
-      <div class="controls">
-        <button class="btn prev" aria-label="Previous">‹</button>
-        <button class="btn next" aria-label="Next">›</button>
+  
+
+  <header>
+  <span class="dropdown">
+    <button class="menu-btn" aria-expanded="false" aria-controls="menu">Menu ▾</button>
+    <div id="menu" class="menu" role="menu">
+      <a href="#" role="menuitem">About</a>
+      <a href="#" role="menuitem">Rules</a>
+      <a href="#" role="menuitem">Gallery</a>
+      <a href="https://www.instagram.com/carworld.nyc/?hl=en" target="_blank" rel="noopener" role="menuitem">Instagram</a>
+    </div>
+  </span>
+</header>
+
+<main>
+    <section class="hero">
+      <div class="hero-inner container">
+        <h1 class="hero-title">Car World Colosseum</h1>
+        
       </div>
     </section>
+
+    <section id="gallery" class="xgallery">
+  <div class="container">
+    <div id="belt"></div>
+    <div class="controls">
+      <button class="btn-nav prev" aria-label="Previous">‹</button>
+      <button class="btn-nav next" aria-label="Next">›</button>
+    </div>
+  </div>
+</section>
   </main>
+
   <footer>
-    <div class="foot">contact: <a href="mailto:attendant@carworldcolosseum.com" style="margin-left:.4rem">attendant@carworldcolosseum.com</a></div>
+    <div class="foot container">contact: <a href="mailto:attendant@carworldcolosseum.com" style="margin-left:.4rem">attendant@carworldcolosseum.com</a></div>
   </footer>
 
 <script>
 (function(){
-  // images to include (exclude MagwadiExample.png and favicon)
-  const sources = ['WilliamIsHungry.png','CitadelBathDay.png','Sew.jpg','FavorSketch.jpg'];
   const belt = document.getElementById('belt');
-
-  // seed belt: repeat to fill ~3× viewport width for a seamless loop
-  const repeats = 6; // 4 images × 6 = 24 slides
-  for(let i=0;i<repeats*sources.length;i++){
-    const src = sources[i % sources.length];
+  const container = belt.parentElement;
+  // Use all current gallery images except MagwadiExample and favicon
+  const sources = ['WilliamIsHungry.png','CitadelBathDay.png','Sew.jpg','FavorSketch.jpg'];
+  for (const src of sources){
     const a = document.createElement('a');
-    a.href = src; a.target = '_blank'; a.className='slide';
+    a.href = src; a.target = '_blank'; a.className = 'slide';
     const img = document.createElement('img');
     img.src = src; img.alt = ''; img.loading='lazy'; img.decoding='async';
     a.appendChild(img); belt.appendChild(a);
   }
+  function centerFirst(){
+    const first = belt.children[0]; if(!first) return;
+    const cw = container.getBoundingClientRect().width;
+    const sw = first.getBoundingClientRect().width;
+    const target = (cw - sw)/2; // center first slide
+    belt.style.transform = 'translateX(' + target + 'px)';
+  }
+  window.addEventListener('load', centerFirst);
+  window.addEventListener('resize', centerFirst);
+  const prev = document.querySelector('.btn-nav.prev');
+  const next = document.querySelector('.btn-nav.next');
+  next.addEventListener('click', ()=>{ belt.appendChild(belt.firstElementChild); centerFirst(); });
+  prev.addEventListener('click', ()=>{ belt.insertBefore(belt.lastElementChild, belt.firstElementChild); centerFirst(); });
+})();
 
-  let offset = 0, speed = 0.6, raf;
-  const stage = document.querySelector('.stage');
-  function slideW(){
-    const first = belt.children[0]; if(!first) return 0;
-    const styles = getComputedStyle(first);
-    return first.getBoundingClientRect().width + parseFloat(styles.marginRight||0);
-  }
-  function loop(){
-    offset -= speed; belt.style.transform = 'translateX('+offset+'px)';
-    const w = slideW();
-    if (w && -offset >= w){ belt.appendChild(belt.children[0]); offset += w; belt.style.transform = 'translateX('+offset+'px)'; }
-    raf = requestAnimationFrame(loop);
-  }
-  stage.addEventListener('mouseenter', ()=> speed = 0);
-  stage.addEventListener('mouseleave', ()=> speed = 0.6);
-  loop();
-
-  // buttons
-  const prev = document.querySelector('.btn.prev');
-  const next = document.querySelector('.btn.next');
-  function anim(to,done){
-    const start = performance.now(); const from = parseFloat((belt.style.transform||'translateX(0px)').replace(/[^-\d.]/g,''))||0; const d = to - from; const T = 220;
-    function tick(t){ const k=Math.min(1,(t-start)/T), e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2; belt.style.transform='translateX('+(from+d*e)+'px)'; if(k<1) requestAnimationFrame(tick); else done&&done(); }
-    requestAnimationFrame(tick);
-  }
-  next.onclick = ()=>{ const w=slideW(); if(!w) return; cancelAnimationFrame(raf); anim(-w,()=>{ belt.appendChild(belt.children[0]); belt.style.transform='translateX(0px)'; loop(); }); };
-  prev.onclick = ()=>{ const w=slideW(); if(!w) return; cancelAnimationFrame(raf); belt.insertBefore(belt.lastElementChild, belt.firstElementChild); belt.style.transform='translateX('+-w+'px)'; anim(0,()=>{ loop(); }); };
+// dropdown toggle
+(function(){
+  const btn = document.querySelector('.menu-btn');
+  const menu = document.getElementById('menu');
+  if(!btn||!menu) return;
+  btn.addEventListener('click', (e)=>{
+    e.stopPropagation();
+    const open = menu.classList.toggle('open');
+    btn.setAttribute('aria-expanded', open ? 'true':'false');
+  });
+  document.addEventListener('click', (e)=>{
+    if(!menu.contains(e.target) && !btn.contains(e.target)){
+      menu.classList.remove('open');
+      btn.setAttribute('aria-expanded','false');
+    }
+  });
 })();
 </script>
 </body>
