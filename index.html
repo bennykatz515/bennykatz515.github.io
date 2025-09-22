@@ -21,7 +21,7 @@
   .container{max-width:1120px;margin:0 auto;padding:0 20px}
 
   /* Header */
-  header{position:sticky;top:0;z-index:50;backdrop-filter:blur(12px);background:rgba(14,15,17,.55);border-bottom:1px solid var(--line)}
+  header{position:fixed;top:12px;right:16px;z-index:60;background:transparent;border:0;backdrop-filter:none}
   .nav{display:flex;align-items:center;justify-content:space-between;height:60px}
   .brand{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.4px}
   .logo{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#10b981,#0ea5e9);color:#041016;font-weight:900}
@@ -66,31 +66,28 @@
   .menu.open{display:block}
   .menu a{display:block;padding:10px 12px;border-radius:8px;text-decoration:none}
   .menu a:hover{background:var(--cardHover)}
+  /* Title offset */
+  .hero-title{position:relative;top:-2in;left:-2in;text-align:left}
 </style>
 <body>
   
 
   <header>
-  <div class="container nav">
-    <div></div>
-    <div class="nav-right">
-      <a href="https://www.instagram.com/carworld.nyc/?hl=en" target="_blank" rel="noopener">Instagram</a>
-      <span class="dropdown">
-        <button class="menu-btn" aria-expanded="false" aria-controls="menu">Menu ▾</button>
-        <div id="menu" class="menu" role="menu">
-          <a href="#" role="menuitem">About</a>
-          <a href="#" role="menuitem">Rules</a>
-          <a href="#" role="menuitem">Gallery</a>
-        </div>
-      </span>
+  <span class="dropdown">
+    <button class="menu-btn" aria-expanded="false" aria-controls="menu">Menu ▾</button>
+    <div id="menu" class="menu" role="menu">
+      <a href="#" role="menuitem">About</a>
+      <a href="#" role="menuitem">Rules</a>
+      <a href="#" role="menuitem">Gallery</a>
+      <a href="https://www.instagram.com/carworld.nyc/?hl=en" target="_blank" rel="noopener" role="menuitem">Instagram</a>
     </div>
-  </div>
+  </span>
 </header>
 
 <main>
     <section class="hero">
       <div class="hero-inner container">
-        <h1>Car World Colosseum</h1>
+        <h1 class="hero-title">Car World Colosseum</h1>
         
       </div>
     </section>
