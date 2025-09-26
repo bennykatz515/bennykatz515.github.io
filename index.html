@@ -45,7 +45,7 @@
   footer { display: grid; place-items: center; padding: 16px 0; }
 
   .logo { width: min(70vw, 520px); height: auto; pointer-events: none; -webkit-user-drag: none; }
-  .stage { position: relative; width: min(92vw, 430px); aspect-ratio: 430/756; border-radius: 12px; overflow: hidden; box-shadow: 0 8px 24px rgba(0,0,0,.6); }
+  .stage { position: relative; width: min(92vw, 430px); aspect-ratio: 430/756; border-radius: 12px; overflow: hidden; box-shadow: none; }
   .cardArea { position: absolute; inset: 0; }
   .centerCard { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%) scaleX(1); width:min(70%, 340px); height:auto; image-rendering:auto; transition: transform 220ms ease-in; filter: drop-shadow(0 6px 16px rgba(0,0,0,.45)); }
   .centerCard.squish { transform:translate(-50%,-50%) scaleX(0.02); }
@@ -88,7 +88,7 @@
 
 <script>
   /* ------------------------------------------------------------
-   * Minimal preloader (silent) + flip animation (body -> champion)
+   * Preload + toggleable flip (body ↔ champion)
    * ---------------------------------------------------------- */
   const manifest = [
     'RedBackdrop.avif', 'RedBackdrop.webp', 'logo.webp',
@@ -106,7 +106,6 @@
 
   (async function runPreload() {
     for (const url of manifest) { await preload(url); }
-    // After preload, set initial image
     setSrc(centerCard, 'body');
   })();
 
@@ -116,30 +115,30 @@
     img.onerror = () => { img.onerror = null; img.src = base + '.webp'; };
   }
 
-  // Flip animation logic
   const stage = document.getElementById('stage');
   const centerCard = document.getElementById('centerCard');
 
-  let flipped = false;
+  let showing = 'body';
   let animating = false;
 
   stage.addEventListener('click', () => {
-    if (animating || flipped) return;
+    if (animating) return;
     animating = true;
+    // ease-in for squish
+    centerCard.style.transition = 'transform 220ms ease-in';
     centerCard.classList.add('squish');
   });
 
   centerCard.addEventListener('transitionend', (e) => {
     if (e.propertyName !== 'transform') return;
-    // Midpoint: if we're squished, swap image and expand
     if (centerCard.classList.contains('squish')) {
-      setSrc(centerCard, 'champion');
-      // switch to ease-out for the return
+      // Midpoint: swap image and expand back out
+      showing = (showing === 'body') ? 'champion' : 'body';
+      setSrc(centerCard, showing);
       centerCard.style.transition = 'transform 260ms ease-out';
       centerCard.classList.remove('squish');
     } else {
       // Finished expanding
-      flipped = true;
       animating = false;
     }
   });
