@@ -31,10 +31,12 @@
   /* Responsive background using AVIF with WebP fallback */
   .bg {
     position: fixed; inset: 0; z-index: -1;
-    background-position: center; background-repeat: no-repeat; background-size: cover;
-    /* Mobile-first portrait (900x1600 provided). You can swap based on aspect. */
-    /* Fallback first (works even if AVIF unsupported or image-set missing) */
+    /* Stretch to fully cover so the red shows everywhere */
+    background-position: center; background-repeat: no-repeat; background-size: 100% 100%;
     background-image: url('RedBackdrop.webp');
+  }
+  @supports (background-image: image-set(url('x.avif') type('image/avif'))) {
+    .bg { background-image: image-set(url('RedBackdrop.webp') type('image/webp') 1x); }
   }
   @supports (background-image: image-set(url('x.avif') type('image/avif'))) {
     .bg {
@@ -67,13 +69,17 @@
   .clickable { animation: pulseGlow 1.2s ease-in-out infinite; }
 
   /* Arms */
-  .arm { position:absolute; width:auto; height:42%; opacity:0; pointer-events:none; transition: transform 350ms cubic-bezier(.22,1,.36,1), opacity 180ms ease-out; filter: drop-shadow(0 6px 16px rgba(0,0,0,.45)); }
+  .arm { position:absolute; opacity:0; pointer-events:none; transition: transform 600ms cubic-bezier(.22,1,.36,1), opacity 220ms ease-out, left 600ms cubic-bezier(.22,1,.36,1), top 600ms cubic-bezier(.22,1,.36,1); filter: drop-shadow(0 6px 16px rgba(0,0,0,.45)); }
+  .armLeft { transform: translate(-140%, 0); }
+  .armTop { transform: translate(0, -140%); }
+  .armRight { transform: translate(140%, 0); }
+  .arm.in { opacity:1; transform: translate(0,0); }
   .armLeft { left: 5%; top: 50%; transform: translate(-120%, -50%); }
   .armTop { left: 50%; top: 8%; transform: translate(-50%, -120%); height:36%; }
   .armRight { right: 5%; top: 50%; transform: translate(120%, -50%); }
   .arm.in { opacity:1; }
   /* Final snap positions next to body */
-  .snapLeft { left: 13%; top: 50%; transform: translate(0, -50%); }
+  
   .snapTop { left: 50%; top: 18%; transform: translate(-50%, 0); }
   .snapRight { right: 13%; top: 50%; transform: translate(0, -50%); }
 
@@ -196,28 +202,79 @@
   }
 
   function armsIn(arms) {
-    // set sources and animate into snap positions
-    setSrc(armLeft, arms.left.file);
-    setSrc(armTop, arms.top.file);
-    setSrc(armRight, arms.right.file);
+    return new Promise(resolve => {
+      // Ensure images have correct sources first
+      setSrc(armLeft, arms.left.file);
+      setSrc(armTop, arms.top.file);
+      setSrc(armRight, arms.right.file);
 
-    // reset to offscreen
-    armLeft.className = 'arm armLeft';
-    armTop.className = 'arm armTop';
-    armRight.className = 'arm armRight';
+      // After images load, compute targets based on body size
+      const waitLoads = [armLeft, armTop, armRight].map(img => new Promise(r => {
+        if (img.complete) return r();
+        img.onload = () => r(); img.onerror = () => r();
+      }));
 
-    // allow next frame to apply in+snap classes
-    requestAnimationFrame(() => {
-      armLeft.classList.add('in');
-      armTop.classList.add('in');
-      armRight.classList.add('in');
-      // snap positions
-      armLeft.classList.add('snapLeft');
-      armTop.classList.add('snapTop');
-      armRight.classList.add('snapRight');
+      Promise.all(waitLoads).then(() => {
+        const stageRect = stage.getBoundingClientRect();
+        const bodyRect = centerCard.getBoundingClientRect();
+
+        // LEFT: match body height, sit flush to body's left side
+        const leftRatio = armLeft.naturalWidth / armLeft.naturalHeight || 1;
+        const leftH = bodyRect.height; const leftW = leftH * leftRatio;
+        armLeft.style.height = leftH + 'px'; armLeft.style.width = leftW + 'px';
+        armLeft.style.top = (bodyRect.top - stageRect.top) + 'px';
+        armLeft.style.left = (bodyRect.left - stageRect.left - leftW) + 'px';
+
+        // RIGHT: match body height, flush to body's right side
+        const rightRatio = armRight.naturalWidth / armRight.naturalHeight || 1;
+        const rightH = bodyRect.height; const rightW = rightH * rightRatio;
+        armRight.style.height = rightH + 'px'; armRight.style.width = rightW + 'px';
+        armRight.style.top = (bodyRect.top - stageRect.top) + 'px';
+        armRight.style.left = (bodyRect.right - stageRect.left) + 'px';
+
+        // TOP: match body width, sit directly above
+        const topRatio = armTop.naturalWidth / armTop.naturalHeight || 1;
+        const topW = bodyRect.width; const topH = topW / topRatio;
+        armTop.style.width = topW + 'px'; armTop.style.height = topH + 'px';
+        armTop.style.left = (bodyRect.left - stageRect.left) + 'px';
+        armTop.style.top = (bodyRect.top - stageRect.top - topH) + 'px';
+
+        // Fade/slide in
+        requestAnimationFrame(() => {
+          armLeft.classList.add('in');
+          armTop.classList.add('in');
+          armRight.classList.add('in');
+        });
+
+        setTimeout(resolve, 620);
+      });
     });
+  }
 
-    return new Promise(resolve => setTimeout(resolve, 380)); // match CSS 350ms + cushion
+  function armsOut() {
+    // slide them outward away from body and fade
+    return new Promise(resolve => {
+      armLeft.classList.remove('in');
+      armTop.classList.remove('in');
+      armRight.classList.remove('in');
+      setTimeout(() => {
+        armLeft.style.opacity = '0';
+        armTop.style.opacity = '0';
+        armRight.style.opacity = '0';
+        resolve();
+      }, 260);
+    });
+  }
+
+  function armsResetStyles(){
+    [armLeft, armTop, armRight].forEach(el=>{
+      el.removeAttribute('style');
+      // keep base classes
+    });
+  }
+
+  function armsOutAndReset(){
+    return armsOut().then(()=>{ armsResetStyles(); });
   }
 
   function armsOut() {
@@ -262,7 +319,7 @@
 
     // If arms are visible, remove them first
     const armsVisible = armLeft.classList.contains('in') || armTop.classList.contains('in') || armRight.classList.contains('in');
-    if (armsVisible) await armsOut();
+    if (armsVisible) await armsOutAndReset();
 
     const arms = pickArms();
     await armsIn(arms);
