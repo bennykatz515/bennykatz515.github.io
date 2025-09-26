@@ -10,7 +10,16 @@
   :root {
     --safe-padding: env(safe-area-inset-top, 0) env(safe-area-inset-right, 0) env(safe-area-inset-bottom, 0) env(safe-area-inset-left, 0);
   }
-  html, body { height: 100%; margin: 0; }
+  html, body {
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, sans-serif;
+    color: #fff;
+    background: #000; /* fallback color while image loads */
+    overscroll-behavior: none;
+    touch-action: manipulation;
+    user-select: none;
+    height: 100svh;
+    overflow: hidden;
+  }
   body {
     font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, sans-serif;
     color: #fff;
@@ -39,15 +48,16 @@
   /* Overlay to deter long-press/save and catch right-clicks */
 
   /* Layout */
-  .wrap { min-height: 100%; display: grid; grid-template-rows: auto 1fr auto; padding: 16px; }
+  .wrap { min-height: 100svh; display: grid; grid-template-rows: auto 1fr auto; padding: 8px; }
   header { display: grid; place-items: center; padding: 8px 0; }
   main { display: grid; place-items: center; }
   footer { display: grid; place-items: center; padding: 16px 0; }
 
   .logo { width: min(70vw, 520px); height: auto; pointer-events: none; -webkit-user-drag: none; }
-  .stage { position: relative; width: min(92vw, 430px); aspect-ratio: 430/756; border-radius: 12px; overflow: hidden; box-shadow: none; }
+  .stage { position: relative; height: min(62svh, 620px); aspect-ratio: 430/756; width: auto; border-radius: 12px; overflow: hidden; box-shadow: none; }
   .cardArea { position: absolute; inset: 0; }
-  .centerCard { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%) scaleX(1); width:min(70%, 340px); height:auto; image-rendering:auto; transition: transform 220ms ease-in; filter: drop-shadow(0 6px 16px rgba(0,0,0,.45)); }
+  .centerCard { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%) scaleX(1); width:auto; height:90%; image-rendering:auto; transition: transform 220ms ease-in; filter: drop-shadow(0 6px 16px rgba(0,0,0,.45)); pointer-events:auto; cursor:pointer; }
+  .centerCard.squish { transform:translate(-50%,-50%) scaleX(0.02); }
   .centerCard.squish { transform:translate(-50%,-50%) scaleX(0.02); }
 
   /* CTA text example; you can replace with your styled image later */
@@ -57,7 +67,7 @@
   /* Loading gate */
 
   /* Prevent image dragging/selection globally */
-  img { -webkit-user-drag: none; user-drag: none; pointer-events: none; }
+  img { -webkit-user-drag: none; user-drag: none; }
   [data-interactive] { pointer-events: auto; }
 </style>
 
@@ -121,12 +131,12 @@
   let showing = 'body';
   let animating = false;
 
-  stage.addEventListener('click', () => {
+  centerCard.addEventListener('click', () => {
     if (animating) return;
     animating = true;
-    // ease-in for squish
     centerCard.style.transition = 'transform 220ms ease-in';
     centerCard.classList.add('squish');
+  });
   });
 
   centerCard.addEventListener('transitionend', (e) => {
