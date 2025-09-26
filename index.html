@@ -24,10 +24,16 @@
     position: fixed; inset: 0; z-index: -1;
     background-position: center; background-repeat: no-repeat; background-size: cover;
     /* Mobile-first portrait (900x1600 provided). You can swap based on aspect. */
-    background-image: image-set(
-      url('/RedBackdrop.avif') type('image/avif') 1x,
-      url('/RedBackdrop.webp') type('image/webp') 1x
-    );
+    /* Fallback first (works even if AVIF unsupported or image-set missing) */
+    background-image: url('RedBackdrop.webp');
+  }
+  @supports (background-image: image-set(url('x.avif') type('image/avif'))) {
+    .bg {
+      background-image: image-set(
+        url('RedBackdrop.avif') type('image/avif') 1x,
+        url('RedBackdrop.webp') type('image/webp') 1x
+      );
+    }
   }
 
   /* Overlay to deter long-press/save and catch right-clicks */
@@ -64,7 +70,7 @@
 
   <div class="wrap">
     <header>
-      <img class="logo" src="/logo.webp" alt="Car World Colosseum" width="900" height="522" />
+      <img class="logo" src="logo.webp" alt="Car World Colosseum" width="900" height="522" />
     </header>
 
     <main>
@@ -84,9 +90,7 @@
   <!-- Loading gate; enabled until all assets preload -->
   <div class="gate" id="gate">
     <div class="panel">
-      <div id="progress">Loading… 0%</div>
-      <button class="btn" id="startBtn" disabled>Start</button>
-    </div>
+      <div id="progress">Loading… 0%</div></div>
   </div>
 
 <script>
@@ -95,15 +99,14 @@
    * ---------------------------------------------------------- */
   const manifest = [
     // You can add more assets here as you produce them
-    '/RedBackdrop.avif', '/RedBackdrop.webp', '/logo.webp',
+    'RedBackdrop.avif', 'RedBackdrop.webp', 'logo.webp',
     // '/attendant_body.avif', '/attendant_body.webp',
     // '/champion_body.avif', '/champion_body.webp',
     // '/arms/left_A.avif', '/arms/left_A.webp',
   ];
 
   const progressEl = document.getElementById('progress');
-  const startBtn = document.getElementById('startBtn');
-  const gate = document.getElementById('gate');
+    const gate = document.getElementById('gate');
   const shield = document.getElementById('shield');
   const stage = document.getElementById('stage');
 
@@ -130,9 +133,9 @@
       const pct = Math.round((done / manifest.length) * 100);
       progressEl.textContent = `Loading… ${pct}%`;
     }
-    startBtn.disabled = false; startBtn.classList.add('ready'); startBtn.textContent = 'Start';
-    startBtn.addEventListener('click', () => {
-      gate.remove();
+    // Auto-dismiss gate when preload completes
+    gate.remove();
+    shield.style.pointerEvents = 'none';
       // Allow interaction only after assets are ready
       shield.style.pointerEvents = 'none';
     }, { once: true });
