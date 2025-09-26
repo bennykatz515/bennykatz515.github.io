@@ -37,7 +37,6 @@
   }
 
   /* Overlay to deter long-press/save and catch right-clicks */
-  .shield { position: fixed; inset: 0; z-index: 5; background: transparent; }
 
   /* Layout */
   .wrap { min-height: 100%; display: grid; grid-template-rows: auto 1fr auto; padding: 16px; }
@@ -48,16 +47,14 @@
   .logo { width: min(70vw, 520px); height: auto; pointer-events: none; -webkit-user-drag: none; }
   .stage { position: relative; width: min(92vw, 430px); aspect-ratio: 430/756; border-radius: 12px; overflow: hidden; box-shadow: 0 8px 24px rgba(0,0,0,.6); }
   .cardArea { position: absolute; inset: 0; }
+  .centerCard { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%) scaleX(1); width:min(70%, 340px); height:auto; image-rendering:auto; transition: transform 220ms ease-in; filter: drop-shadow(0 6px 16px rgba(0,0,0,.45)); }
+  .centerCard.squish { transform:translate(-50%,-50%) scaleX(0.02); }
 
   /* CTA text example; you can replace with your styled image later */
   .cta { text-align: center; font-weight: 700; letter-spacing: .02em; text-shadow: 0 2px 8px rgba(0,0,0,.6); }
   .cta .small { opacity: .85; font-weight: 600; }
 
   /* Loading gate */
-  .gate { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; background: rgba(0,0,0,.82); backdrop-filter: blur(2px); }
-  .gate .panel { background: rgba(20,20,20,.8); padding: 16px 20px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,.6); text-align: center; }
-  .btn { appearance: none; border: 0; padding: 10px 16px; border-radius: 10px; font-weight: 700; cursor: not-allowed; opacity: .6; }
-  .btn.ready { cursor: pointer; opacity: 1; }
 
   /* Prevent image dragging/selection globally */
   img { -webkit-user-drag: none; user-drag: none; pointer-events: none; }
@@ -66,8 +63,6 @@
 
 <body>
   <div class="bg" aria-hidden="true"></div>
-  <div class="shield" id="shield" aria-hidden="true"></div>
-
   <div class="wrap">
     <header>
       <img class="logo" src="logo.webp" alt="Car World Colosseum" width="900" height="522" />
@@ -75,7 +70,7 @@
 
     <main>
       <div class="stage" id="stage" role="region" aria-label="Game stage">
-        <div class="cardArea" id="cardArea"></div>
+        <div class="cardArea" id="cardArea"><img id="centerCard" class="centerCard" alt="Attendant" /></div>
       </div>
     </main>
 
@@ -85,40 +80,24 @@
         <div>FOR A CHANCE TO WIN A GOLDEN ATTENDANT</div>
       </div>
     </footer>
-  </div>
 
-  <!-- Loading gate; enabled until all assets preload -->
-  <div class="gate" id="gate">
-    <div class="panel">
-      <div id="progress">Loading… 0%</div></div>
-  </div>
+    <div style="text-align:center; font-size:0.85rem; opacity:0.75; padding:8px 0;">
+      © 2025 Car World Colosseum
+    </div>
+  </div>  </div>
 
 <script>
   /* ------------------------------------------------------------
-   * Minimal preloader + interaction locks (no frameworks)
+   * Minimal preloader (silent) + flip animation (body -> champion)
    * ---------------------------------------------------------- */
   const manifest = [
-    // You can add more assets here as you produce them
     'RedBackdrop.avif', 'RedBackdrop.webp', 'logo.webp',
-    // '/attendant_body.avif', '/attendant_body.webp',
-    // '/champion_body.avif', '/champion_body.webp',
-    // '/arms/left_A.avif', '/arms/left_A.webp',
+    'body.avif', 'body.webp', 'champion.avif', 'champion.webp',
   ];
-
-  const progressEl = document.getElementById('progress');
-    const gate = document.getElementById('gate');
-  const shield = document.getElementById('shield');
-  const stage = document.getElementById('stage');
-
-  // Deter saving: block context menu on visuals
-  document.addEventListener('contextmenu', (e) => {
-    if (e.target.closest('.stage, .logo, .bg')) e.preventDefault();
-  });
 
   function preload(url) {
     return new Promise((resolve) => {
-      const isImage = /\.(avif|webp|png|jpg|jpeg|gif|svg)(\?.*)?$/i.test(url);
-      if (!isImage) { resolve(); return; }
+      if (!/\.(avif|webp|png|jpg|jpeg|gif|svg)(\?.*)?$/i.test(url)) { resolve(); return; }
       const img = new Image();
       img.onload = img.onerror = () => resolve();
       img.src = url;
@@ -126,41 +105,48 @@
   }
 
   (async function runPreload() {
-    let done = 0;
-    for (const url of manifest) {
-      await preload(url);
-      done++;
-      const pct = Math.round((done / manifest.length) * 100);
-      progressEl.textContent = `Loading… ${pct}%`;
-    }
-    // Auto-dismiss gate when preload completes
-    gate.remove();
-    shield.style.pointerEvents = 'none';
-      // Allow interaction only after assets are ready
-      shield.style.pointerEvents = 'none';
-    }, { once: true });
+    for (const url of manifest) { await preload(url); }
+    // After preload, set initial image
+    setSrc(centerCard, 'body');
   })();
 
-  /* ------------------------------------------------------------
-   * Placeholder interaction (click to toggle a temp image)
-   * You can replace this with the real game logic later.
-   * ---------------------------------------------------------- */
-  const cardArea = document.getElementById('cardArea');
-  let toggled = false;
+  // Helper to set AVIF with WebP fallback
+  function setSrc(img, base) {
+    img.src = base + '.avif';
+    img.onerror = () => { img.onerror = null; img.src = base + '.webp'; };
+  }
+
+  // Flip animation logic
+  const stage = document.getElementById('stage');
+  const centerCard = document.getElementById('centerCard');
+
+  let flipped = false;
+  let animating = false;
+
   stage.addEventListener('click', () => {
-    if (!document.body.contains(gate)) {
-      toggled = !toggled;
-      cardArea.innerHTML = '';
-      if (toggled) {
-        const temp = document.createElement('div');
-        temp.style.position = 'absolute';
-        temp.style.inset = '10%';
-        temp.style.background = 'rgba(0,0,0,.35)';
-        temp.style.border = '2px solid rgba(255,255,255,.6)';
-        temp.style.borderRadius = '12px';
-        cardArea.appendChild(temp);
-      }
+    if (animating || flipped) return;
+    animating = true;
+    centerCard.classList.add('squish');
+  });
+
+  centerCard.addEventListener('transitionend', (e) => {
+    if (e.propertyName !== 'transform') return;
+    // Midpoint: if we're squished, swap image and expand
+    if (centerCard.classList.contains('squish')) {
+      setSrc(centerCard, 'champion');
+      // switch to ease-out for the return
+      centerCard.style.transition = 'transform 260ms ease-out';
+      centerCard.classList.remove('squish');
+    } else {
+      // Finished expanding
+      flipped = true;
+      animating = false;
     }
+  });
+
+  // Deter saving a bit: block context menu on key visuals
+  document.addEventListener('contextmenu', (e) => {
+    if (e.target.closest('.stage, .logo, .bg')) e.preventDefault();
   });
 </script>
 </body>
