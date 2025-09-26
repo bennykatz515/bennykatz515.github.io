@@ -99,11 +99,16 @@
 <script>
   /* ------------------------------------------------------------
    * Preload + toggleable flip (body ↔ champion)
+   * (Bugfix: query DOM elements BEFORE using them)
    * ---------------------------------------------------------- */
   const manifest = [
     'RedBackdrop.avif', 'RedBackdrop.webp', 'logo.webp',
     'body.avif', 'body.webp', 'champion.avif', 'champion.webp',
   ];
+
+  // Grab elements up-front
+  const stage = document.getElementById('stage');
+  const centerCard = document.getElementById('centerCard');
 
   function preload(url) {
     return new Promise((resolve) => {
@@ -114,19 +119,17 @@
     });
   }
 
-  (async function runPreload() {
-    for (const url of manifest) { await preload(url); }
-    setSrc(centerCard, 'body');
-  })();
-
   // Helper to set AVIF with WebP fallback
   function setSrc(img, base) {
     img.src = base + '.avif';
     img.onerror = () => { img.onerror = null; img.src = base + '.webp'; };
   }
 
-  const stage = document.getElementById('stage');
-  const centerCard = document.getElementById('centerCard');
+  (async function runPreload() {
+    for (const url of manifest) { await preload(url); }
+    // Set initial image after preload
+    setSrc(centerCard, 'body');
+  })();
 
   let showing = 'body';
   let animating = false;
@@ -137,18 +140,15 @@
     centerCard.style.transition = 'transform 220ms ease-in';
     centerCard.classList.add('squish');
   });
-  });
 
   centerCard.addEventListener('transitionend', (e) => {
     if (e.propertyName !== 'transform') return;
     if (centerCard.classList.contains('squish')) {
-      // Midpoint: swap image and expand back out
       showing = (showing === 'body') ? 'champion' : 'body';
       setSrc(centerCard, showing);
       centerCard.style.transition = 'transform 260ms ease-out';
       centerCard.classList.remove('squish');
     } else {
-      // Finished expanding
       animating = false;
     }
   });
