@@ -1,220 +1,164 @@
 <!doctype html>
 <html lang="en">
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Car World Colosseum</title>
-<link rel="icon" href="/favicon.png?v=3" sizes="128x128" type="image/png">
+<!-- Keep your favicon setup from earlier -->
+<link rel="icon" href="/favicon.png" />
+
 <style>
-  :root{--bg:#0E0F11;--text:#E8EAED;--muted:#A9ACB3;--line:rgba(255,255,255,.08);--glass:rgba(255,255,255,.06);--glass2:rgba(255,255,255,.10)}
-  *{box-sizing:border-box}
-  html,body{height:100%}
-  body{margin:0;color:var(--text);background:
-    radial-gradient(1200px 600px at 100% -10%, rgba(27,85,106,.25), transparent 60%),
-    radial-gradient(900px 500px at -10% 110%, rgba(110,34,69,.22), transparent 60%),
-    var(--bg);
-    font:16px/1.55 system-ui,-apple-system,Segoe UI,Roboto,Inter,Helvetica,Arial,sans-serif;
-    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+  :root {
+    --safe-padding: env(safe-area-inset-top, 0) env(safe-area-inset-right, 0) env(safe-area-inset-bottom, 0) env(safe-area-inset-left, 0);
   }
-  a{color:inherit}
-  .container{max-width:1120px;margin:0 auto;padding:0 20px}
+  html, body { height: 100%; margin: 0; }
+  body {
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, sans-serif;
+    color: #fff;
+    background: #000; /* fallback color while image loads */
+    overscroll-behavior: none;
+    touch-action: manipulation;
+    user-select: none;
+  }
+  /* Responsive background using AVIF with WebP fallback */
+  .bg {
+    position: fixed; inset: 0; z-index: -1;
+    background-position: center; background-repeat: no-repeat; background-size: cover;
+    /* Mobile-first portrait (900x1600 provided). You can swap based on aspect. */
+    background-image: image-set(
+      url('/RedBackdrop.avif') type('image/avif') 1x,
+      url('/RedBackdrop.webp') type('image/webp') 1x
+    );
+  }
 
-  /* Minimal header (top-right menu) */
-  header{position:fixed;top:16px;right:16px;z-index:60}
-  .menu-btn{padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--glass);backdrop-filter:blur(6px);color:var(--text);cursor:pointer}
-  .menu{position:absolute;right:0;top:110%;min-width:180px;background:#121317;border:1px solid var(--line);border-radius:12px;padding:6px;display:none;box-shadow:0 10px 30px rgba(0,0,0,.4)}
-  .menu.open{display:block}
-  .menu a{display:block;padding:10px 12px;border-radius:8px;text-decoration:none}
-  .menu a:hover{background:var(--glass)}
+  /* Overlay to deter long-press/save and catch right-clicks */
+  .shield { position: fixed; inset: 0; z-index: 5; background: transparent; }
 
-  /* Hero fixed, overlays the page and fades out on scroll */
-  .hero{position:fixed;inset:0;height:100svh;display:grid;place-items:center;text-align:center;opacity:1;will-change:transform;transition:transform .2s ease;pointer-events:none;z-index:20}
-  .hero::before{content:"";position:absolute;inset:0;background:url('MagwadiExample.png') center/cover no-repeat;filter:brightness(.9) saturate(1.05) blur(12px)}
-  .hero::after{content:"";position:absolute;inset:0;background:radial-gradient(80% 60% at 50% 40%,transparent,rgba(0,0,0,.22) 60%,rgba(0,0,0,.33))}
-  .hero .art{position:absolute;inset:0;background:url('MagwadiExample.png') center/contain no-repeat;z-index:1}
-  .hero h1{position:relative;font-size:clamp(32px,6vw,56px);margin:0;font-weight:800;letter-spacing:.2px;transform:translate(-16px,-16px)}
-  /* Spacer to push content below the overlaid hero */
-  .hero-spacer{height:100svh}
+  /* Layout */
+  .wrap { min-height: 100%; display: grid; grid-template-rows: auto 1fr auto; padding: 16px; }
+  header { display: grid; place-items: center; padding: 8px 0; }
+  main { display: grid; place-items: center; }
+  footer { display: grid; place-items: center; padding: 16px 0; }
 
-  /* Horizontal gallery */
-  .xgallery{padding:34px 0}
-  .xgallery .container{position:relative;overflow:hidden}
-  #belt{display:flex;will-change:transform;gap:24px}
-  .slide{flex:0 0 auto;border:1px solid var(--line);border-radius:18px;overflow:hidden;background:var(--glass);box-shadow:0 10px 40px rgba(0,0,0,.35)}
-  .slide img{display:block;height:clamp(220px,60svh,620px);width:auto}
+  .logo { width: min(70vw, 520px); height: auto; pointer-events: none; -webkit-user-drag: none; }
+  .stage { position: relative; width: min(92vw, 430px); aspect-ratio: 430/756; border-radius: 12px; overflow: hidden; box-shadow: 0 8px 24px rgba(0,0,0,.6); }
+  .cardArea { position: absolute; inset: 0; }
 
-  /* Controls */
-  .controls{position:absolute;inset:0;pointer-events:none}
-  .btn-nav{position:absolute;top:50%;transform:translateY(-50%);width:44px;height:44px;border-radius:999px;border:1px solid var(--line);background:var(--glass2);backdrop-filter:blur(6px);color:#fff;font-size:22px;line-height:44px;text-align:center;cursor:pointer;pointer-events:auto}
-  .btn-nav:hover{background:rgba(255,255,255,.18)}
-  .btn-nav.prev{left:10px}
-  .btn-nav.next{right:10px}
+  /* CTA text example; you can replace with your styled image later */
+  .cta { text-align: center; font-weight: 700; letter-spacing: .02em; text-shadow: 0 2px 8px rgba(0,0,0,.6); }
+  .cta .small { opacity: .85; font-weight: 600; }
 
-  footer{border-top:1px solid var(--line)}
-  .foot{padding:20px 0;display:flex;flex-direction:column;gap:6px;align-items:center;justify-content:center;color:var(--muted);font-size:.92rem}
-  .foot a{color:var(--text);text-decoration:none;border-bottom:1px dotted var(--line)}
+  /* Loading gate */
+  .gate { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; background: rgba(0,0,0,.82); backdrop-filter: blur(2px); }
+  .gate .panel { background: rgba(20,20,20,.8); padding: 16px 20px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,.6); text-align: center; }
+  .btn { appearance: none; border: 0; padding: 10px 16px; border-radius: 10px; font-weight: 700; cursor: not-allowed; opacity: .6; }
+  .btn.ready { cursor: pointer; opacity: 1; }
+
+  /* Prevent image dragging/selection globally */
+  img { -webkit-user-drag: none; user-drag: none; pointer-events: none; }
+  [data-interactive] { pointer-events: auto; }
 </style>
+
 <body>
-  <header>
-    <span class="dropdown">
-      <button class="menu-btn" aria-expanded="false" aria-controls="menu">Menu ▾</button>
-      <div id="menu" class="menu" role="menu">
-        <a href="#" role="menuitem">About</a>
-        <a href="#" role="menuitem">Rules</a>
-        <a href="#" role="menuitem">Gallery</a>
-        <a href="https://www.instagram.com/carworld.nyc/?hl=en" target="_blank" rel="noopener" role="menuitem">Instagram</a>
+  <div class="bg" aria-hidden="true"></div>
+  <div class="shield" id="shield" aria-hidden="true"></div>
+
+  <div class="wrap">
+    <header>
+      <img class="logo" src="/logo.webp" alt="Car World Colosseum" width="900" height="522" />
+    </header>
+
+    <main>
+      <div class="stage" id="stage" role="region" aria-label="Game stage">
+        <div class="cardArea" id="cardArea"></div>
       </div>
-    </span>
-  </header>
+    </main>
 
-  <main>
-    <section class="hero" id="hero">
-      <div class="art" aria-hidden="true"></div>
-      <h1>Car World Colosseum</h1>
-    </section>
-    <div class="hero-spacer" aria-hidden="true"></div>
-
-    <section id="gallery" class="xgallery">
-      <div class="container">
-        <div id="belt"></div>
-        <div class="controls">
-          <button class="btn-nav prev" aria-label="Previous">‹</button>
-          <button class="btn-nav next" aria-label="Next">›</button>
-        </div>
+    <footer>
+      <div class="cta">
+        <div class="small">JOIN THE WAITING LIST</div>
+        <div>FOR A CHANCE TO WIN A GOLDEN ATTENDANT</div>
       </div>
-    </section>
-  </main>
+    </footer>
+  </div>
 
-  <footer>
-    <div class=\"foot\"><div>contact: <a href=\"mailto:attendant@carworldcolosseum.com\" style=\"margin-left:.4rem\">attendant@carworldcolosseum.com</a></div><div>© 2025 Car World Colosseum</div></div>
-  </footer>
+  <!-- Loading gate; enabled until all assets preload -->
+  <div class="gate" id="gate">
+    <div class="panel">
+      <div id="progress">Loading… 0%</div>
+      <button class="btn" id="startBtn" disabled>Start</button>
+    </div>
+  </div>
 
 <script>
-// Header dropdown
-(function(){
-  const btn = document.querySelector('.menu-btn');
-  const menu = document.getElementById('menu');
-  if(!btn||!menu) return;
-  btn.addEventListener('click', (e)=>{
-    e.stopPropagation();
-    const open = menu.classList.toggle('open');
-    btn.setAttribute('aria-expanded', open ? 'true':'false');
+  /* ------------------------------------------------------------
+   * Minimal preloader + interaction locks (no frameworks)
+   * ---------------------------------------------------------- */
+  const manifest = [
+    // You can add more assets here as you produce them
+    '/RedBackdrop.avif', '/RedBackdrop.webp', '/logo.webp',
+    // '/attendant_body.avif', '/attendant_body.webp',
+    // '/champion_body.avif', '/champion_body.webp',
+    // '/arms/left_A.avif', '/arms/left_A.webp',
+  ];
+
+  const progressEl = document.getElementById('progress');
+  const startBtn = document.getElementById('startBtn');
+  const gate = document.getElementById('gate');
+  const shield = document.getElementById('shield');
+  const stage = document.getElementById('stage');
+
+  // Deter saving: block context menu on visuals
+  document.addEventListener('contextmenu', (e) => {
+    if (e.target.closest('.stage, .logo, .bg')) e.preventDefault();
   });
-  document.addEventListener('click', (e)=>{
-    if(!menu.contains(e.target) && !btn.contains(e.target)){
-      menu.classList.remove('open');
-      btn.setAttribute('aria-expanded','false');
+
+  function preload(url) {
+    return new Promise((resolve) => {
+      const isImage = /\.(avif|webp|png|jpg|jpeg|gif|svg)(\?.*)?$/i.test(url);
+      if (!isImage) { resolve(); return; }
+      const img = new Image();
+      img.onload = img.onerror = () => resolve();
+      img.src = url;
+    });
+  }
+
+  (async function runPreload() {
+    let done = 0;
+    for (const url of manifest) {
+      await preload(url);
+      done++;
+      const pct = Math.round((done / manifest.length) * 100);
+      progressEl.textContent = `Loading… ${pct}%`;
     }
-  });
-})();
+    startBtn.disabled = false; startBtn.classList.add('ready'); startBtn.textContent = 'Start';
+    startBtn.addEventListener('click', () => {
+      gate.remove();
+      // Allow interaction only after assets are ready
+      shield.style.pointerEvents = 'none';
+    }, { once: true });
+  })();
 
-// Tuck-up hero overlay (slides upward as you scroll)
-(function(){
-  const hero = document.getElementById('hero');
-  if(!hero) return;
-  function onScroll(){
-    const h = window.innerHeight || hero.getBoundingClientRect().height;
-    const y = window.scrollY || window.pageYOffset;
-    const dy = Math.min(y, h); // cap at one viewport height
-    hero.style.transform = 'translateY(' + (-dy) + 'px)';
-  }
-  window.addEventListener('scroll', onScroll, {passive:true});
-  window.addEventListener('load', onScroll);
-})();
-
-// Autoscroll gallery with centering controls (stable)
-(function(){
-  const belt = document.getElementById('belt');
-  const container = belt.parentElement;
-  const stage = container.parentElement;
-  const sources = ['WilliamIsHungry.png','CitadelBathDay.png','Sew.jpg','FavorSketch.jpg'];
-
-  function addSlide(src){
-    const a = document.createElement('a');
-    a.href = src; a.target = '_blank'; a.className='slide';
-    const img = document.createElement('img');
-    img.src = src; img.alt = ''; img.loading='lazy'; img.decoding='async';
-    a.appendChild(img); belt.appendChild(a);
-  }
-
-  // seed a base sequence
-  sources.forEach(addSlide);
-
-  function ensureFilled(){
-    const need = container.getBoundingClientRect().width * 3; // 3x viewport width
-    let guard = 0;
-    while (belt.scrollWidth < need && guard < 60){
-      for (const s of sources) addSlide(s);
-      guard++;
-    }
-  }
-  window.addEventListener('load', ensureFilled);
-  window.addEventListener('resize', ensureFilled);
-
-  let offset = 0, speed = 0.5, raf;
-  const setX = (x)=> belt.style.transform = 'translateX('+x+'px)';
-
-  function step(){
-    offset -= speed; setX(offset);
-    const first = belt.children[0];
-    if(first){
-      const rect = first.getBoundingClientRect();
-      const gap = parseFloat(getComputedStyle(first).marginRight || 0);
-      const w = rect.width + gap;
-      const leftEdge = container.getBoundingClientRect().left;
-      if(rect.right < leftEdge){
-        belt.appendChild(first);
-        offset += w; setX(offset);
+  /* ------------------------------------------------------------
+   * Placeholder interaction (click to toggle a temp image)
+   * You can replace this with the real game logic later.
+   * ---------------------------------------------------------- */
+  const cardArea = document.getElementById('cardArea');
+  let toggled = false;
+  stage.addEventListener('click', () => {
+    if (!document.body.contains(gate)) {
+      toggled = !toggled;
+      cardArea.innerHTML = '';
+      if (toggled) {
+        const temp = document.createElement('div');
+        temp.style.position = 'absolute';
+        temp.style.inset = '10%';
+        temp.style.background = 'rgba(0,0,0,.35)';
+        temp.style.border = '2px solid rgba(255,255,255,.6)';
+        temp.style.borderRadius = '12px';
+        cardArea.appendChild(temp);
       }
     }
-    raf = requestAnimationFrame(step);
-  }
-
-  function nearestToCenter(){
-    const mid = container.getBoundingClientRect().left + container.getBoundingClientRect().width/2;
-    let best=null, bestDist=Infinity;
-    for(const el of belt.children){
-      const r = el.getBoundingClientRect();
-      const cx = r.left + r.width/2;
-      const d = Math.abs(mid - cx);
-      if(d < bestDist){ best=el; bestDist=d; }
-    }
-    return best;
-  }
-
-  function animateTo(newOffset){
-    cancelAnimationFrame(raf);
-    const start = performance.now();
-    const from = parseFloat((belt.style.transform||'translateX(0px)').replace(/[^-\d.]/g,''))||0;
-    const delta = newOffset - from; const dur = 320;
-    function tick(t){
-      const k = Math.min(1,(t-start)/dur);
-      const e = k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
-      setX(from + delta*e);
-      if(k<1) requestAnimationFrame(tick); else { offset = newOffset; step(); }
-    }
-    requestAnimationFrame(tick);
-  }
-
-  function centerOn(el){
-    if(!el) return;
-    const cRect = container.getBoundingClientRect();
-    const centerX = cRect.left + cRect.width/2;
-    const r = el.getBoundingClientRect();
-    const current = parseFloat((belt.style.transform||'translateX(0px)').replace(/[^-\d.]/g,''))||0;
-    const delta = centerX - (r.left + r.width/2);
-    animateTo(current + delta);
-  }
-
-  stage.addEventListener('mouseenter', ()=> speed = 0);
-  stage.addEventListener('mouseleave', ()=> speed = 0.5);
-
-  const prev = document.querySelector('.btn-nav.prev');
-  const next = document.querySelector('.btn-nav.next');
-  next.addEventListener('click', ()=>{ const cur = nearestToCenter(); const target = cur?.nextElementSibling || belt.children[0]; centerOn(target); });
-  prev.addEventListener('click', ()=>{ const cur = nearestToCenter(); const target = cur?.previousElementSibling || belt.children[belt.children.length-1]; centerOn(target); });
-
-  window.addEventListener('load', step);
-})();
+  });
 </script>
 </body>
 </html>
