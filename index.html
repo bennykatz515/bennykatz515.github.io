@@ -226,25 +226,17 @@ let layout  = null;
 const PAD   = 6;
 
 function computeLayout(){
-  // Work in coordinates RELATIVE to the stage (no viewport left/top)
   const rW = stage.clientWidth;
   const rH = stage.clientHeight;
-
   const maxW   = (rW - PAD*2) / 3;
   const maxH   = (rH - PAD*2) / 2;
   const wFromH = maxH * BODY_AR;
   const cardW  = Math.min(maxW, wFromH);
   const cardH  = cardW / BODY_AR;
-
   const blockW = cardW * 3, blockH = cardH * 2;
-
-  // Bias inside the stage: a bit lower on narrow/mobile screens
-  const freeY   = rH - blockH;
-  const isNarrow = rW <= 540;          // tweak breakpoint if needed
-  const bias     = isNarrow ? 0.55 : 0.30;   // higher = lower on the screen
+  const freeY     = rH - blockH;
   const blockLeft = Math.round((rW - blockW)/2);
-  const blockTop  = Math.round(freeY * bias);
-
+  const blockTop  = Math.round(freeY * 0.3);
   const col0 = blockLeft;
   const col1 = blockLeft + cardW;
   const col2 = blockLeft + cardW*2;
@@ -253,7 +245,7 @@ function computeLayout(){
 
   layout = {
     w: cardW, h: cardH,
-    body:  { left: col1, top: row1 }, // bottom-center
+    body:  { left: col1, top: row1 },
     top:   { left: col1, top: row0 },
     left:  { left: col0, top: row1 },
     right: { left: col2, top: row1 },
@@ -265,7 +257,6 @@ function computeLayout(){
     frame: { left: blockLeft, top: blockTop, width: blockW, height: blockH },
   };
 }
-
 
 function place(el, rect){
   el.style.width  = layout.w + 'px';
@@ -281,40 +272,24 @@ function positionHotzone(){
   if (!hz || !layout || !footer) return;
 
   const footerRect = footer.getBoundingClientRect();
-  const footerTop  = footerRect.top;
-
   const stageRect  = stage.getBoundingClientRect();
+
+  // body bottom in viewport coords
   const bodyBottom = stageRect.top + layout.body.top + layout.h;
-  const offset     = 6;
+  const offset = 6;
+  let topPx  = Math.max(0, Math.round(bodyBottom + offset));
 
-  const isNarrow = window.innerWidth <= 540; // treat as "mobile"
+  // space we reserve at the bottom = footer height (because footer is fixed)
+  const bottomPx = Math.max(0, Math.min(window.innerHeight, window.innerHeight - footerRect.top));
 
-  if (isNarrow) {
-    // Mobile: start just below the body, end at footer top
-    let topPx = Math.round(bodyBottom + offset);
-    let bottomPx = Math.max(0, window.innerHeight - footerTop);
-
-    // Enforce a minimum height so the box is never invisible
-    const minHeight = 48;
-    let avail = window.innerHeight - bottomPx - topPx;
-    if (avail < minHeight) {
-      topPx = Math.max(0, window.innerHeight - bottomPx - minHeight);
-    }
-
-    hz.style.display = 'block';
-    hz.style.top = topPx + 'px';
-    hz.style.left = '0';
-    hz.style.right = '0';
-    hz.style.bottom = bottomPx + 'px';
-  } else {
-    // Desktop: hug bottom — stretch from just above footer to bottom
-    hz.style.display = 'block';
-    hz.style.top = (footerTop - 60) + 'px'; // 60px tall box above footer
-    hz.style.left = '0';
-    hz.style.right = '0';
-    hz.style.bottom = '0';
+  // ensure a minimum click height so it doesn't vanish on desktop
+  const minHeight = 48;
+  let avail = window.innerHeight - bottomPx - topPx;
+  if (avail < minHeight) {
+    // pull the top up to make room, but never above 0
+    topPx = Math.max(0, window.innerHeight - bottomPx - minHeight);
+    avail = window.innerHeight - bottomPx - topPx;
   }
-}
 
   if (avail <= 0) {
     hz.style.display = 'none';
