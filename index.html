@@ -26,7 +26,8 @@
   }
 
   /* Page layout */
-  .wrap { min-height: 100svh; display: grid; grid-template-rows: auto 1fr auto; gap: 8px; padding: 6px 8px; }
+  /* ↓ change: gap 8px → 0 to bring footer & legal line closer to the body */
+  .wrap { min-height: 100svh; display: grid; grid-template-rows: auto 1fr auto; gap: 0; padding: 6px 8px; }
   header { display: grid; place-items: center; }
   main   { display: grid; place-items: center; }
   footer { display: grid; place-items: center; }
@@ -34,7 +35,7 @@
   /* tighten logo margin a hair */
   .logo  { width: min(54vw, 320px); height: auto; display:block; margin: 0 auto 2px; pointer-events:none; -webkit-user-drag:none; }
 
-  /* ↓ make stage a bit shorter so cards sit closer to both logo & footer */
+  /* stage unchanged */
   .stage { position: relative; width: min(92vw, 480px); height: min(66svh, 560px);
            margin: 0 auto; display:grid; place-items:center; }
 
@@ -98,7 +99,8 @@
       </div>
     </footer>
 
-    <div style="text-align:center; font-size:0.8rem; opacity:0.75; padding:2px 0;">
+    <!-- ↓ change: pulled up by ~40px; tweak the -40px value if you want more/less -->
+    <div style="text-align:center; font-size:0.8rem; opacity:0.75; padding:2px 0; margin-top:-40px;">
       © 2025 Car World Colosseum
     </div>
   </div>
@@ -146,7 +148,7 @@ function computeLayout(){
   // bias the block a bit upward (closer to logo) instead of perfectly centered
   const freeY = r.height - blockH;
   const blockLeft = Math.round(r.left + (r.width  - blockW)/2);
-  const blockTop  = Math.round(r.top  + freeY * 0.3); // 0.35 < 0.5 ⇒ higher in the stage
+  const blockTop  = Math.round(r.top  + freeY * 0.3);
 
   const col0 = blockLeft;
   const col1 = blockLeft + cardW;
