@@ -316,7 +316,7 @@ function positionHotzone(){
   const stageRect  = stage.getBoundingClientRect();
   const bodyBottom = stageRect.top + layout.body.top + layout.h;
 
-  const topPx = Math.max(0, Math.round(bodyBottom + 5)); // 5px gap
+  const topPx = Math.max(0, Math.round(bodyBottom + 3)); // 3px gap
 
   hz.style.top = topPx + 'px';
   hz.style.bottom = '0';
