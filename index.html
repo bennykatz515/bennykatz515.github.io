@@ -29,7 +29,12 @@
   .wrap { min-height: 100svh; display: grid; grid-template-rows: auto 1fr auto; gap: 8px; padding: 6px 8px; }
   header { display: grid; place-items: center; }
   main   { display: grid; place-items: center; }
-  footer { display: grid; place-items: center; }
+footer { 
+  display: grid; 
+  place-items: center; 
+  margin-top: -36px; /* move footer + waitlist text upward, tweak value to taste */
+}
+
 
   /* logo controls */
   .logo {
@@ -48,7 +53,7 @@
 
 
   /* ↓ make stage a bit shorter so cards sit closer to both logo & footer */
-  .stage { position: relative; width: min(92vw, 480px); height: min(54svh, 560px);
+  .stage { position: relative; width: min(92vw, 480px); height: min(66svh, 560px);
            margin: 0 auto; display:grid; place-items:center; }
 
   .cardArea { position: absolute; inset: 0; }
