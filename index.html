@@ -137,9 +137,16 @@ footer {
           <div id="champFrame" class="champFrame" aria-hidden="true"></div>
         </div>
       </div>
-    </main>
+</main>
 
-    <footer>
+<!-- Transparent clickbox linking to the waitlist -->
+<a id="waitlistBox"
+   href="https://forms.gle/hJcNRWekxT2RLGMHA"
+   target="_blank" rel="noopener"
+   aria-label="Join the waiting list"></a>
+
+<footer>
+
       <div class="cta">
         <div class="small">JOIN THE WAITING LIST</div>
         <div>FOR A CHANCE TO WIN A GOLDEN ATTENDANT</div>
@@ -379,3 +386,18 @@ document.addEventListener('contextmenu', (e) => {
 </script>
 </body>
 </html>
+
+/* ===== Waitlist clickbox (transparent with black outline) ===== */
+:root { --hotzone-top: 62vh; }  /* tweak this to move the box up/down */
+
+#waitlistBox {
+  position: fixed;
+  left: 0; right: 0;
+  top: var(--hotzone-top);
+  bottom: 0;
+  z-index: 20;
+  outline: 1px solid #000;      /* visible border; remove later if you want */
+  background: transparent;      /* transparent hit area */
+  text-decoration: none;
+}
+
