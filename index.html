@@ -124,7 +124,7 @@ footer {
   img { -webkit-user-drag: none; user-drag: none; }
 
 /* ===== Visible overlay clickbox for testing ===== */
-:root { --hotzone-top: 62vh; } /* tweak this to position the box */
+
 
 #waitlistBox {
   position: fixed;
@@ -278,21 +278,21 @@ function placeCenter(){ place(centerCard, layout.body); }
 
 function positionHotzone(){
   const hz = document.getElementById('waitlistBox');
-  const footer = document.querySelector('footer');
-  if (!hz) return;
+  if (!hz || !layout) return;
 
-  // Footer height if it’s visible; otherwise 0
-  const footerRect = footer ? footer.getBoundingClientRect() : null;
-  const footerH = footerRect ? Math.max(0, Math.min(window.innerHeight, window.innerHeight - footerRect.top)) : 0;
+  const stageRect = stage.getBoundingClientRect();
+  const bodyBottom = stageRect.top + layout.body.top + layout.h;
 
-  const minHeight = 120; // guaranteed clickable height hugging the bottom
+  const topPx = Math.max(0, Math.round(bodyBottom + 5));
 
   hz.style.display = 'block';   // never suppress
+  hz.style.position = 'fixed';
   hz.style.left = '0';
   hz.style.right = '0';
-  hz.style.bottom = footerH + 'px'; // sit right above the footer
-  hz.style.top = Math.max(0, window.innerHeight - footerH - minHeight) + 'px';
+  hz.style.top = topPx + 'px';  // start 5px below the body
+  hz.style.bottom = '0';        // extend to the bottom of the screen
 }
+
 
 
 function positionFooter() {
