@@ -30,7 +30,7 @@ html, body {
   background: #000;               /* start fully black */
   z-index: 2147483646;            /* just below #waitlistBox (…47) */
   opacity: 1;
-  transition: opacity 0.5s ease;  /* 0.5s fade */
+  transition: opacity 1.5s ease;  /* 0.5s fade */
 }
 
 /* when ready, fade away (add .ready to <body> in JS) */
@@ -138,8 +138,10 @@ footer {
   font-weight: 400;
   letter-spacing: .02em;
   text-shadow: 0 2px 8px rgba(0,0,0,.6);
-  line-height: 1.2;
+  line-height: 1.15;
+  font-size: clamp(20px, 5.2vw, 36px);   /* ← add this */
 }
+
 
 /* colored words */
 .cta .blue { color: #4DA3FF; }     /* WAITLIST */
@@ -155,7 +157,8 @@ footer {
     align-items: center;
     justify-content: center;
     flex-wrap: nowrap;
-    gap: .4ch;                     /* small spacing between segments */
+    gap: .4ch;
+    font-size: clamp(24px, 2.2vw, 44px);  /* ← add this for desktop */
   }
   .cta .line { display: inline; }
 }
