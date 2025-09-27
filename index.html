@@ -37,16 +37,15 @@ html, body {
   header { display: grid; place-items: center; }
   main   { display: grid; place-items: center; }
 footer {
-  position: fixed;     /* always visible at bottom */
+  position: fixed;           /* fixed so we can place it precisely */
   left: 0;
   right: 0;
-  bottom: 0;           /* <-- anchor to bottom instead of computing top */
-  z-index: 10000;      /* above the hotzone (9999) */
+  top: 70vh;                 /* temporary; JS will set exact top */
+  z-index: 10000;            /* above the hotzone (9999) */
   display: grid;
   place-items: center;
   gap: 4px;
   padding: 8px 8px max(12px, env(safe-area-inset-bottom));
-  background: transparent; /* keeps your visual design identical */
 }
 
 
@@ -124,34 +123,41 @@ footer {
 
   img { -webkit-user-drag: none; user-drag: none; }
 
-
 /* ===== Visible overlay clickbox for testing ===== */
+:root { --hotzone-top: 62vh; } /* tweak this to position the box */
+
 #waitlistBox {
   position: fixed;
-  left: 0;
-  right: 0;
+  left: 0; right: 0;
+  top: var(--hotzone-top);
+  bottom: 0;
   z-index: 9999;
-  display: block;                 /* never suppressed by default */
+  display: block;
 
-  /* VISIBLE for testing */
-  background: rgba(0, 255, 255, 0.18);
-  outline: 2px solid #00ffff;
+  /* invisible */
+  background: transparent !important;
+  border: 0 !important;
+  outline: none !important;
+  text-decoration: none;
 
-  /* tap/selection niceties */
+  /* mobile: remove tap flash / focus ring */
   -webkit-tap-highlight-color: transparent;
   -webkit-touch-callout: none;
   touch-action: manipulation;
-  text-decoration: none;
-  border: 0;
-  outline-offset: 0;
 }
-/* (Optional) keep focus clean without hiding the box */
 #waitlistBox:focus,
 #waitlistBox:active,
 #waitlistBox:focus-visible {
+  outline: none !important;
   box-shadow: none !important;
+  background: transparent !important;
 }
-
+/* TEST ONLY – add anywhere after #waitlistBox */
+#waitlistBox {
+  min-height: 120px;                 /* guaranteed click height */
+  background: rgba(0,255,255,.18) !important; /* visualize area */
+  outline: 1px dashed #00ced1;       /* visualize edge */
+}
 
 
 </style>
@@ -272,32 +278,50 @@ function placeCenter(){ place(centerCard, layout.body); }
 
 function positionHotzone(){
   const hz = document.getElementById('waitlistBox');
-  if (!hz || !layout) return;
-
   const footer = document.querySelector('footer');
+  if (!hz) return;
+
+  // Footer height if it’s visible; otherwise 0
   const footerRect = footer ? footer.getBoundingClientRect() : null;
+  const footerH = footerRect ? Math.max(0, Math.min(window.innerHeight, window.innerHeight - footerRect.top)) : 0;
 
-  // Body bottom in viewport coords
-  const stageRect  = stage.getBoundingClientRect();
-  const bodyBottom = stageRect.top + layout.body.top + layout.h;
+  const minHeight = 120; // guaranteed clickable height hugging the bottom
 
-  // Start a few pixels below the body
-  const offset   = 6;
-  const topPx    = Math.max(0, Math.round(bodyBottom + offset));
-
-  // Reserve space for the fixed footer so the box doesn't sit under it
-  const bottomPx = footerRect ? Math.max(0, window.innerHeight - Math.max(footerRect.top, 0)) : 0;
-
-  // Always show (no suppression)
-  hz.style.display = 'block';
-  hz.style.top     = topPx + 'px';
-  hz.style.left    = '0';
-  hz.style.right   = '0';
-  hz.style.bottom  = bottomPx + 'px';
+  hz.style.display = 'block';   // never suppress
+  hz.style.left = '0';
+  hz.style.right = '0';
+  hz.style.bottom = footerH + 'px'; // sit right above the footer
+  hz.style.top = Math.max(0, window.innerHeight - footerH - minHeight) + 'px';
 }
 
 
+function positionFooter() {
+  const footer = document.querySelector('footer');
+  if (!footer || !layout) return;
 
+  // measure footer height (ensure it’s rendered)
+  footer.style.visibility = 'hidden';
+  footer.style.top = '0px';
+  footer.style.bottom = '';
+  footer.style.display = 'grid';
+  const footerH = footer.getBoundingClientRect().height || 0;
+  footer.style.visibility = '';
+
+  // body bottom in viewport coords: stage top + body top + card height
+  const stageRect = stage.getBoundingClientRect();
+  const bodyBottom = stageRect.top + layout.body.top + layout.h;
+
+  // place footer 10px below the body, but keep it on-screen
+  const gap = 10;
+  let topPx = Math.round(bodyBottom + gap);
+
+  // clamp: never let footer go off bottom edge
+  const maxTop = Math.max(0, window.innerHeight - footerH);
+  if (topPx > maxTop) topPx = maxTop;
+
+  footer.style.top = topPx + 'px';
+  footer.style.bottom = ''; // we’re anchoring by top
+}
 
 
 /* Keep layout correct on resize/scroll (and move the waitlist hotzone) */
@@ -316,6 +340,7 @@ function relayoutVisible(){
   }
 
   positionHotzone();
+  positionFooter();
 
 }
 
@@ -331,12 +356,12 @@ let pendingArms = null;      // holds the set used for the next "enter" action
 
 /* =======================  INIT  ======================= */
 async function init(){
-computeLayout(); placeCenter(); positionHotzone();
+computeLayout(); placeCenter(); positionHotzone(); positionFooter();
 
   centerCard.onload = () => {
     if (centerCard.naturalWidth) {
       BODY_AR = centerCard.naturalWidth / centerCard.naturalHeight;
-      computeLayout(); placeCenter(); positionHotzone();
+      computeLayout(); placeCenter(); positionHotzone(); positionFooter();
     }
   };
   setSrc(centerCard, 'body.webp');
@@ -347,6 +372,10 @@ computeLayout(); placeCenter(); positionHotzone();
 }
 init();
 
+window.addEventListener('resize', () => {
+  computeLayout(); placeCenter(); positionHotzone(); positionFooter();
+  if (state === 'armsIn') { place(armLeft, layout.left); place(armTop, layout.top); place(armRight, layout.right); }
+});
 
 /* =======================  GAME LOGIC  ======================= */
 function pickArms(){
