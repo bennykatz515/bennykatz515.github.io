@@ -13,8 +13,6 @@ html, body {
   overflow: hidden;          /* ← disables scrolling */
 }
 
-/* Add this here */
-:root { --tail-lift: -0px; }  /* tweak this number */
 
   body {
     font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, sans-serif;
@@ -38,16 +36,16 @@ html, body {
   .wrap { min-height: 100svh; display: grid; grid-template-rows: auto 1fr auto; gap: 8px; padding: 6px 8px; }
   header { display: grid; place-items: center; }
   main   { display: grid; place-items: center; }
-footer { 
-  display: grid; 
-  place-items: center; 
-  margin-top: var(--tail-lift);
+footer {
+  position: relative;
+  z-index: 10000;                  /* keep footer above the overlay */
+  display: grid;
+  place-items: center;
+  gap: 4px;                        /* space between CTA and © */
+  padding: 8px 8px max(12px, env(safe-area-inset-bottom));
 }
 
-/* Move the © line by the same amount */
-.wrap > div:last-child {
-  margin-top: var(--tail-lift);
-}
+
 
 
   /* logo controls */
@@ -113,6 +111,11 @@ footer {
 
   .cta { text-align:center; font-weight:700; letter-spacing:.02em; text-shadow:0 2px 8px rgba(0,0,0,.6); }
   .cta .small { opacity:.85; font-weight:600; }
+.copyright {
+  text-align: center;
+  font-size: 0.8rem;
+  opacity: 0.75;
+}
 
   img { -webkit-user-drag: none; user-drag: none; }
 
@@ -176,17 +179,13 @@ footer {
    aria-label="Join the waiting list"></a>
 
 <footer>
+  <div class="cta">
+    <div class="small">JOIN THE WAITING LIST</div>
+    <div>FOR A CHANCE TO WIN A GOLDEN ATTENDANT</div>
+  </div>
+  <div class="copyright">© 2025 Car World Colosseum</div>
+</footer>
 
-      <div class="cta">
-        <div class="small">JOIN THE WAITING LIST</div>
-        <div>FOR A CHANCE TO WIN A GOLDEN ATTENDANT</div>
-      </div>
-    </footer>
-
-<div style="text-align:center; font-size:0.8rem; opacity:0.75; padding:2px 0; position:relative; top:-20px;">
-
-      © 2025 Car World Colosseum
-    </div>
   </div>
 
 <script>
@@ -271,17 +270,23 @@ function positionHotzone(){
   const hz = document.getElementById('waitlistBox');
   if (!hz || !layout) return;
 
-  // Body’s bottom (in viewport coords): stage top + body top + card height
   const stageRect = stage.getBoundingClientRect();
-  const bodyBottom = stageRect.top + layout.body.top + layout.h;
+  const footer = document.querySelector('footer');
+  const footerRect = footer ? footer.getBoundingClientRect() : null;
 
-  // Start the hotzone a few pixels below the body
-  const offset = 6; // tweak this gap if you want
+  // Start 6px below the body bottom
+  const bodyBottom = stageRect.top + layout.body.top + layout.h;
+  const offset = 6;
   hz.style.top = Math.max(0, Math.round(bodyBottom + offset)) + 'px';
+
+  // End at the top of the footer so it never covers footer links/text
+  const bottomPixels = footerRect ? Math.max(0, window.innerHeight - Math.max(footerRect.top, 0)) : 0;
+  hz.style.bottom = bottomPixels + 'px';
+
   hz.style.left = '0';
   hz.style.right = '0';
-  hz.style.bottom = '0'; // extends to bottom of viewport
 }
+
 
 /* Keep layout correct on resize/scroll (and move the waitlist hotzone) */
 function relayoutVisible(){
