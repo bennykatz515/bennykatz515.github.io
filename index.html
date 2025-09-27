@@ -1,20 +1,22 @@
 <!doctype html>
 <html lang="en">
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Car World Colosseum</title>
-<link rel="icon" href="/favicon.png" />
-<link rel="preload" href="blackbeardregular-webfont.woff2" as="font" type="font/woff2" crossorigin>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Car World Colosseum</title>
+  <link rel="icon" href="/favicon.png" />
+  <link rel="preload" href="./blackbeardregular-webfont.woff2" as="font" type="font/woff2" crossorigin>
 
-<style>
-/* BlackBeard font + page fade-in curtain */
-@font-face{
-  font-family: "BlackBeard";
-  src: url("blackbeardregular-webfont.woff2") format("woff2"); /* adjust path if in /fonts */
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
+  <style>
+  /* BlackBeard font + page fade-in curtain */
+  @font-face{
+    font-family: "BlackBeard";
+    src: url("./blackbeardregular-webfont.woff2") format("woff2"); /* adjust path if in /fonts */
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+  }
+
 
 html, body {
   height: 100%;
@@ -58,7 +60,7 @@ body {
 }
 
 /* Page layout */
-.wrap { min-height: 100svh; display: grid; grid-template-rows: auto 1fr auto; gap: 8px; padding: 6px 8px; }
+.wrap { min-height: 100dvh; display: grid; grid-template-rows: auto 1fr auto; gap: 8px; padding: 6px 8px; }
 header { display: grid; place-items: center; }
 main   { display: grid; place-items: center; }
 footer {
@@ -89,7 +91,7 @@ footer {
 }
 
 /* ↓ make stage a bit shorter so cards sit closer to both logo & footer */
-.stage { position: relative; width: min(92vw, 480px); height: min(66svh, 560px);
+.stage { position: relative; width: min(92vw, 480px); height: min(66dvh, 560px);
          margin: 0 auto; display:grid; place-items:center; }
 
 .cardArea { position: absolute; inset: 0; }
@@ -138,7 +140,8 @@ footer {
   font-weight: 400;
   letter-spacing: .02em;
   text-shadow: 0 2px 8px rgba(0,0,0,.6);
-  line-height: 0.9;
+  line-height: 0.9
+;
   font-size: 1.5em;   /* ~50% bigger */
 }
 
@@ -322,7 +325,7 @@ function positionHotzone(){
   const stageRect  = stage.getBoundingClientRect();
   const bodyBottom = stageRect.top + layout.body.top + layout.h;
 
-  const topPx = Math.max(0, Math.round(bodyBottom + 3)); // 3px gap
+  const topPx = Math.max(0, Math.round(bodyBottom + 1)); // 1px gap
 
   hz.style.top = topPx + 'px';
   hz.style.bottom = '0';
