@@ -4,8 +4,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Car World Colosseum</title>
 <link rel="icon" href="/favicon.png" />
+<link rel="preload" href="blackbeardregular-webfont.woff2" as="font" type="font/woff2" crossorigin>
+
 
 <style>
+/* BlackBeard font */
+@font-face{
+  font-family: "BlackBeard";
+  src: url("blackbeardregular-webfont.woff2") format("woff2"); /* adjust path if in /fonts */
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
 html, body {
   height: 100%;
   margin: 0;
@@ -113,13 +123,16 @@ footer {
   /* Champion perimeter frame — hidden per request */
   .champFrame { display:none !important; }
 
+/* CTA text */
 .cta { 
+  font-family: "BlackBeard", system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, sans-serif;
   text-align: center;
-  font-weight: 700;
+  font-weight: 400;
   letter-spacing: .02em;
   text-shadow: 0 2px 8px rgba(0,0,0,.6);
   line-height: 1.2;
 }
+
 
 /* colored words */
 .cta .blue { color: #4DA3FF; }     /* WAITLIST */
