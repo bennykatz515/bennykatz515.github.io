@@ -12,6 +12,10 @@ html, body {
   background: transparent;
   overflow: hidden;          /* ← disables scrolling */
 }
+
+/* Add this here */
+:root { --tail-lift: -60px; }  /* tweak this number */
+
   body {
     font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, sans-serif;
     color: #fff;
@@ -37,7 +41,12 @@ html, body {
 footer { 
   display: grid; 
   place-items: center; 
-  margin-top: -100px; /* move footer + waitlist text upward, tweak value to taste */
+  margin-top: var(--tail-lift);
+}
+
+/* Move the © line by the same amount */
+.wrap > div:last-child {
+  margin-top: var(--tail-lift);
 }
 
 
@@ -51,7 +60,7 @@ footer {
   -webkit-user-drag: none;
 
   /* visually enlarge without changing layout box, and push it lower */
-  transform: scale(1.6) translateY(30px); /* adjust px value to taste */
+  transform: scale(1.6) translateY(28px); /* adjust px value to taste */
   transform-origin: center;
   will-change: transform;
 }
