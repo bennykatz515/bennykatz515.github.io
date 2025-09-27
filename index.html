@@ -128,25 +128,28 @@ const prewarm = async () => { for (const u of manifest) await preload(u); };
 const setSrc  = (img, file) => { img.src = file; };
 const rc      = (arr) => arr[Math.floor(Math.random()*arr.length)];
 
-/* =======================  LAYOUT (3×2 T)  ======================= */
+/* =======================  LAYOUT (3×2 T) — SCROLL-SAFE  ======================= */
 let BODY_AR = 375/525; // default portrait ratio so we can place immediately
 let layout  = null;    // {w,h, body, top, left, right, off, frame}
 const PAD   = 6;
 
 function computeLayout(){
-  const r = stage.getBoundingClientRect();
-  const maxW = (r.width  - PAD*2) / 3;
-  const maxH = (r.height - PAD*2) / 2;
+  // Work in coordinates RELATIVE to the stage (no viewport left/top)
+  const rW = stage.clientWidth;
+  const rH = stage.clientHeight;
+
+  const maxW   = (rW - PAD*2) / 3;
+  const maxH   = (rH - PAD*2) / 2;
   const wFromH = maxH * BODY_AR;
-  const cardW = Math.min(maxW, wFromH);
-  const cardH = cardW / BODY_AR;
+  const cardW  = Math.min(maxW, wFromH);
+  const cardH  = cardW / BODY_AR;
 
   const blockW = cardW * 3, blockH = cardH * 2;
 
-  // bias the block a bit upward (closer to logo) instead of perfectly centered
-  const freeY = r.height - blockH;
-  const blockLeft = Math.round(r.left + (r.width  - blockW)/2);
-  const blockTop  = Math.round(r.top  + freeY * 0.3); // 0.35 < 0.5 ⇒ higher in the stage
+  // bias upward inside the stage
+  const freeY     = rH - blockH;
+  const blockLeft = Math.round((rW - blockW)/2);
+  const blockTop  = Math.round(freeY * 0.3);
 
   const col0 = blockLeft;
   const col1 = blockLeft + cardW;
@@ -161,22 +164,36 @@ function computeLayout(){
     left:  { left: col0, top: row1 },
     right: { left: col2, top: row1 },
     off: {
-      left:  { left: col0 - r.width, top: row1 },
-      top:   { left: col1, top: row0 - r.height },
-      right: { left: col2 + r.width, top: row1 },
+      // Off-screen locations also relative to stage
+      left:  { left: col0 - rW, top: row1 },
+      top:   { left: col1,      top: row0 - rH },
+      right: { left: col2 + rW, top: row1 },
     },
     frame: { left: blockLeft, top: blockTop, width: blockW, height: blockH },
   };
 }
 
 function place(el, rect){
-  const s = stage.getBoundingClientRect();
   el.style.width  = layout.w + 'px';
   el.style.height = layout.h + 'px';
-  el.style.left   = (rect.left - s.left) + 'px';
-  el.style.top    = (rect.top  - s.top)  + 'px';
+  el.style.left   = rect.left + 'px';
+  el.style.top    = rect.top  + 'px';
 }
 function placeCenter(){ place(centerCard, layout.body); }
+
+/* Keep layout correct on resize/scroll */
+function relayoutVisible(){
+  computeLayout(); placeCenter();
+  if (state === 'armsIn') {
+    place(armLeft, layout.left); place(armTop, layout.top); place(armRight, layout.right);
+  } else {
+    // keep off-positions consistent when hidden
+    place(armLeft, layout.off.left); place(armTop, layout.off.top); place(armRight, layout.off.right);
+  }
+}
+
+window.addEventListener('resize', relayoutVisible);
+window.addEventListener('scroll', relayoutVisible, { passive: true });
 
 /* =======================  STATE  ======================= */
 let state = 'boot';          // 'idle' (no arms), 'armsIn' (visible), 'armsOut' (hidden)
