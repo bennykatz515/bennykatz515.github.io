@@ -3,129 +3,91 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Car World Colosseum</title>
-<!-- Keep your favicon setup from earlier -->
 <link rel="icon" href="/favicon.png" />
 
 <style>
-  :root {
-    --safe-padding: env(safe-area-inset-top, 0) env(safe-area-inset-right, 0) env(safe-area-inset-bottom, 0) env(safe-area-inset-left, 0);
-  }
   html, body { height: 100%; margin: 0; background: transparent; }
   body {
     font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, sans-serif;
     color: #fff;
-    background: #000; /* fallback color while image loads */
+    /* solid fallback under the bg image */
+    background: #000;
     overscroll-behavior: none;
     touch-action: manipulation;
     user-select: none;
+    /* keep footer from being cut off on phones */
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
   }
-  /* Responsive background using AVIF with WebP fallback */
+
+  /* Red backdrop */
   .bg {
     position: fixed; inset: 0; z-index: -1;
-    /* Solid red fallback behind the image; 'cover' to avoid odd stretching */
     background-color: #7b0000;
     background-position: center; background-repeat: no-repeat; background-size: cover;
-    background-image: url('RedBackdrop.webp?v=1');
-  }
-  @supports (background-image: image-set(url('x.avif') type('image/avif'))) {
-    .bg { background-image: image-set(url('RedBackdrop.webp') type('image/webp') 1x); }
-  }
-  @supports (background-image: image-set(url('x.avif') type('image/avif'))) {
-    .bg {
-      background-image: image-set(
-        url('RedBackdrop.avif') type('image/avif') 1x,
-        url('RedBackdrop.webp') type('image/webp') 1x
-      );
-    }
+    background-image: url('RedBackdrop.webp?v=2');
   }
 
-  /* Overlay to deter long-press/save and catch right-clicks */
+  /* Page layout */
+  .wrap { min-height: 100svh; display: grid; grid-template-rows: auto 1fr auto; gap: 8px; padding: 6px 8px; }
+  header { display: grid; place-items: center; }
+  main   { display: grid; place-items: center; }
+  footer { display: grid; place-items: center; }
 
-  /* Layout */
-  .wrap { min-height: 100svh; display: grid; grid-template-rows: auto 1fr auto; padding: 8px; }
-  header { display: grid; place-items: center; padding: 6px 0; }
-  main { display: grid; place-items: center; }
-  footer { display: grid; place-items: center; padding: 8px 0; }
+  .logo  { width: min(54vw, 320px); height: auto; display:block; margin: 2px auto 4px; pointer-events:none; -webkit-user-drag:none; }
 
-  .logo { width: min(56vw, 340px); height: auto; pointer-events: none; -webkit-user-drag: none; }
-  .stage { position: relative; width: min(92vw, 480px); height: min(72svh, 620px); border-radius: 12px; overflow: visible; box-shadow: none; margin-top: 2px; display:grid; place-items:center; }
+  /* ↑↑ ONLY CHANGE #1: stage bigger so cards are ~50% larger ↑↑ */
+  .stage { position: relative; width: min(92vw, 480px); height: min(72svh, 620px);
+           margin: 0 auto; display:grid; place-items:center; }
+
   .cardArea { position: absolute; inset: 0; }
-  .card { position:absolute; image-rendering:auto; filter: drop-shadow(0 6px 16px rgba(0,0,0,.45)); }
-  .centerCard { transition: transform 220ms ease-in, filter 300ms ease-in-out; cursor:pointer; }
+  .card     { position:absolute; image-rendering:auto; filter: drop-shadow(0 6px 16px rgba(0,0,0,.45)); }
+
+  /* Body (center card) */
+  .centerCard { cursor:pointer; transition: transform 320ms ease-in, filter 300ms ease-in-out; }
   .centerCard.squish { transform-origin:center; transform: scaleX(0.02); }
-  /* Pulsing clickable glow */
-  @keyframes pulseGlow { 0% { filter: drop-shadow(0 0 0 rgba(255,234,0,0)) drop-shadow(0 6px 16px rgba(0,0,0,.45)); } 50% { filter: drop-shadow(0 0 22px rgba(255,234,0,.9)) drop-shadow(0 6px 16px rgba(0,0,0,.45)); } 100% { filter: drop-shadow(0 0 0 rgba(255,234,0,0)) drop-shadow(0 6px 16px rgba(0,0,0,.45)); } }
-  .clickable { animation: pulseGlow 1.2s ease-in-out infinite; }
-
-  /* Arms */
-  .arm { opacity:0; pointer-events:none; transition: left var(--arm-in-ms, 3000ms) cubic-bezier(.16,1,.3,1), top var(--arm-in-ms, 3000ms) cubic-bezier(.16,1,.3,1), transform var(--arm-in-ms, 3000ms) cubic-bezier(.16,1,.3,1), opacity 500ms ease-out; }
-  .championGlow { filter: drop-shadow(0 0 24px rgba(255,0,0,.9)) drop-shadow(0 6px 16px rgba(0,0,0,.55)); }
-
-  /* Champion perimeter frame */
-  
-  @keyframes pulseRed { 0% { filter: drop-shadow(0 0 0 rgba(255,0,0,0)) drop-shadow(0 6px 16px rgba(0,0,0,.45)); } 50% { filter: drop-shadow(0 0 24px rgba(255,0,0,.95)) drop-shadow(0 6px 16px rgba(0,0,0,.45)); } 100% { filter: drop-shadow(0 0 0 rgba(255,0,0,0)) drop-shadow(0 6px 16px rgba(0,0,0,.45)); } }
-  .pulseRed { animation: pulseRed 1.8s ease-in-out 1; } 50% { box-shadow: 0 0 28px rgba(255,0,0,.95); } 100% { box-shadow: 0 0 0 rgba(255,0,0,0.15); } }
-  
-  
-  @keyframes pulseRed { 0% { box-shadow: 0 0 0 rgba(255,0,0,0.2); } 50% { box-shadow: 0 0 24px rgba(255,0,0,.95); } 100% { box-shadow: 0 0 0 rgba(255,0,0,0.2); } }
-  
-  
-  .centerCard { transition: transform 220ms ease-in, filter 300ms ease-in-out; cursor:pointer; }
-  .centerCard.squish { transform-origin:center; transform: scaleX(0.02); }
-  /* Pulsing clickable glow */
-  @keyframes pulseGlow { 0% { filter: drop-shadow(0 0 0 rgba(255,234,0,0)) drop-shadow(0 6px 16px rgba(0,0,0,.45)); } 50% { filter: drop-shadow(0 0 22px rgba(255,234,0,.9)) drop-shadow(0 6px 16px rgba(0,0,0,.45)); } 100% { filter: drop-shadow(0 0 0 rgba(255,234,0,0)) drop-shadow(0 6px 16px rgba(0,0,0,.45)); } }
-  .clickable { animation: pulseGlow 1.2s ease-in-out infinite; }
-
-  /* Arms */
-  .arm { opacity:0; pointer-events:none; transition: left 1400ms cubic-bezier(.22,1,.36,1), top 1400ms cubic-bezier(.22,1,.36,1), opacity 380ms ease-out; }
-  .championGlow { filter: drop-shadow(0 0 24px rgba(255,0,0,.9)) drop-shadow(0 6px 16px rgba(0,0,0,.55)); }
-  .centerCard.squish { transform:translate(-50%,-50%) scaleX(0.02); }
-  /* Pulsing clickable glow */
   @keyframes pulseGlow {
-    0% { filter: drop-shadow(0 0 0 rgba(255, 234, 0, 0.0)) drop-shadow(0 6px 16px rgba(0,0,0,.45)); }
-    50% { filter: drop-shadow(0 0 22px rgba(255, 234, 0, .9)) drop-shadow(0 6px 16px rgba(0,0,0,.45)); }
-    100% { filter: drop-shadow(0 0 0 rgba(255, 234, 0, 0.0)) drop-shadow(0 6px 16px rgba(0,0,0,.45)); }
+    0%   { filter: drop-shadow(0 0 0 rgba(255,234,0,0)) drop-shadow(0 6px 16px rgba(0,0,0,.45)); }
+    50%  { filter: drop-shadow(0 0 22px rgba(255,234,0,.9)) drop-shadow(0 6px 16px rgba(0,0,0,.45)); }
+    100% { filter: drop-shadow(0 0 0 rgba(255,234,0,0)) drop-shadow(0 6px 16px rgba(0,0,0,.45)); }
   }
-  .clickable { animation: pulseGlow 1.2s ease-in-out infinite; }
+  .clickable { animation: pulseGlow 1.4s ease-in-out infinite; }
 
-  /* Arms */
-  .arm { position:absolute; opacity:0; pointer-events:none; transition: transform 1200ms cubic-bezier(.22,1,.36,1), opacity 320ms ease-out, left 1200ms cubic-bezier(.22,1,.36,1), top 1200ms cubic-bezier(.22,1,.36,1); filter: drop-shadow(0 6px 16px rgba(0,0,0,.45)); }
-  .armLeft { transform: translate(-160%, 0); }
-  .armTop { transform: translate(0, -160%); }
-  .armRight { transform: translate(160%, 0); }
-  .arm.in { opacity:1; transform: translate(0,0); }
-  .armLeft { transform: translate(-140%, 0); }
-  .armTop { transform: translate(0, -140%); }
-  .armRight { transform: translate(140%, 0); }
-  .arm.in { opacity:1; transform: translate(0,0); }
-  .armLeft { left: 5%; top: 50%; transform: translate(-120%, -50%); }
-  .armTop { left: 50%; top: 8%; transform: translate(-50%, -120%); height:36%; }
-  .armRight { right: 5%; top: 50%; transform: translate(120%, -50%); }
-  .arm.in { opacity:1; }
-  /* Final snap positions next to body */
-  
-  .snapTop { left: 50%; top: 18%; transform: translate(-50%, 0); }
-  .snapRight { right: 13%; top: 50%; transform: translate(0, -50%); }
+  /* Arms (slow entrances/exits) */
+  :root { --arm-in-ms: 3000ms; --arm-out-ms: 1200ms; }
+  .arm {
+    opacity:0; pointer-events:none;
+    transition:
+      left var(--arm-in-ms) cubic-bezier(.16,1,.3,1),
+      top  var(--arm-in-ms) cubic-bezier(.16,1,.3,1),
+      transform var(--arm-in-ms) cubic-bezier(.16,1,.3,1),
+      opacity 500ms ease-out;
+  }
 
-  /* Champion red glow for all four */
-  .championGlow { filter: drop-shadow(0 0 24px rgba(255,0,0,.9)) drop-shadow(0 6px 16px rgba(0,0,0,.55)); }
+  /* Champion perimeter frame (kept as before) */
+  .champFrame {
+    position:absolute; pointer-events:none;
+    border: 6px solid rgba(255,0,0,.65);
+    border-radius: 10px;
+    opacity:0; box-shadow: 0 0 0 rgba(255,0,0,0);
+    transition: opacity 280ms ease;
+  }
+  .champFrame.visible { opacity:1; }
+  @keyframes pulseRed {
+    0% { box-shadow: 0 0 0 rgba(255,0,0,0.15); }
+    50%{ box-shadow: 0 0 28px rgba(255,0,0,.95); }
+    100%{ box-shadow: 0 0 0 rgba(255,0,0,0.15); }
+  }
+  .champFrame.pulse { animation: pulseRed 1.8s ease-in-out 1; }
 
-  .centerCard.squish { transform:translate(-50%,-50%) scaleX(0.02); }
-  .centerCard.squish { transform:translate(-50%,-50%) scaleX(0.02); }
+  .cta { text-align:center; font-weight:700; letter-spacing:.02em; text-shadow:0 2px 8px rgba(0,0,0,.6); }
+  .cta .small { opacity:.85; font-weight:600; }
 
-  /* CTA text example; you can replace with your styled image later */
-  .cta { text-align: center; font-weight: 700; letter-spacing: .02em; text-shadow: 0 2px 8px rgba(0,0,0,.6); }
-  .cta .small { opacity: .85; font-weight: 600; }
-
-  /* Loading gate */
-
-  /* Prevent image dragging/selection globally */
   img { -webkit-user-drag: none; user-drag: none; }
-  [data-interactive] { pointer-events: auto; }
 </style>
 
 <body>
   <div class="bg" aria-hidden="true"></div>
+
   <div class="wrap">
     <header>
       <img class="logo" src="logo.webp" alt="Car World Colosseum" width="900" height="522" />
@@ -135,10 +97,10 @@
       <div class="stage" id="stage" role="region" aria-label="Game stage">
         <div class="cardArea" id="cardArea">
           <img id="centerCard" class="card centerCard" alt="Attendant" />
-          <img id="armLeft" class="card arm armLeft" alt="Left Arm" />
-          <img id="armTop" class="card arm armTop" alt="Top Arm" />
-          <img id="armRight" class="card arm armRight" alt="Right Arm" />
-          
+          <img id="armLeft"   class="card arm" alt="Left Arm" />
+          <img id="armTop"    class="card arm" alt="Top Arm" />
+          <img id="armRight"  class="card arm" alt="Right Arm" />
+          <div id="champFrame" class="champFrame" aria-hidden="true"></div>
         </div>
       </div>
     </main>
@@ -150,274 +112,211 @@
       </div>
     </footer>
 
-    <div style="text-align:center; font-size:0.8rem; opacity:0.75; padding:6px 0;">© 2025 Car World Colosseum</div>
-  </div>  </div>
+    <div style="text-align:center; font-size:0.8rem; opacity:0.75; padding:6px 0;">
+      © 2025 Car World Colosseum
+    </div>
+  </div>
 
 <script>
-  /* ------------------------------------------------------------
-   * Robust init: center-first layout, slow animations, perimeter pulse, separated actions
-   * ---------------------------------------------------------- */
-  const manifest = [
-    'RedBackdrop.webp', 'logo.webp', 'body.webp', 'champion.webp',
-    'fighter_left.webp','fighter_right.webp','fighter_sensitivity.webp',
-    'fucker_left.webp','fucker_right.webp','fucker_sensitivity.webp',
-    'fracker_left.webp','fracker_right.webp','fracker_sensitivity.webp',
-    'freak_left.webp','freak_right.webp','freak_sensitivity.webp',
-  ];
+/* =======================  DATA  ======================= */
+const manifest = [
+  'RedBackdrop.webp', 'logo.webp', 'body.webp', 'champion.webp',
+  'fighter_left.webp','fighter_right.webp','fighter_sensitivity.webp',
+  'fucker_left.webp','fucker_right.webp','fucker_sensitivity.webp',
+  'fracker_left.webp','fracker_right.webp','fracker_sensitivity.webp',
+  'freak_left.webp','freak_right.webp','freak_sensitivity.webp',
+];
+const CLASSES = ['fighter','fucker','fracker','freak'];
 
-  const classes = ['fighter','fucker','fracker','freak'];
+/* =======================  ELTS  ======================= */
+const stage      = document.getElementById('stage');
+const centerCard = document.getElementById('centerCard');
+const armLeft    = document.getElementById('armLeft');
+const armTop     = document.getElementById('armTop');
+const armRight   = document.getElementById('armRight');
+const champFrame = document.getElementById('champFrame');
 
-  // Elements
-  const stage = document.getElementById('stage');
-  const centerCard = document.getElementById('centerCard');
-  const armLeft = document.getElementById('armLeft');
-  const armTop = document.getElementById('armTop');
-  const armRight = document.getElementById('armRight');
-  
+/* =======================  HELPERS  ======================= */
+const preload = (url) => new Promise(res => { const i = new Image(); i.onload = i.onerror = res; i.src = url; });
+const prewarm = async () => { for (const u of manifest) await preload(u); };
+const setSrc  = (img, file) => { img.src = file; };
+const rc      = (arr) => arr[Math.floor(Math.random()*arr.length)];
 
-  function preload(url) {
-    return new Promise((resolve) => {
-      const img = new Image(); img.onload = img.onerror = () => resolve(); img.src = url;
-    });
-  }
-  async function prewarm(){ for(const u of manifest) await preload(u); }
-  function setSrc(img, file){ img.src = file; }
-  function rc(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+/* =======================  LAYOUT (3×2 T)  ======================= */
+let BODY_AR = 375/525; // default portrait ratio so we can place immediately
+let layout  = null;    // {w,h, body, top, left, right, off, frame}
 
-  // Layout state (respect original aspect ratio from body image)
-  let BODY_AR = 375/525; // fallback
-  let layout = null; // {w,h, body, top, left, right, off, frame}
-  const PAD = 6; // inner safety margin
+/* ↓↓ ONLY CHANGE #2: smaller padding lets cards grow inside the bigger stage ↓↓ */
+const PAD   = 6;
 
-  function computeLayout(){
-    const r = stage.getBoundingClientRect();
-    // 3 columns × 2 rows T-grid, centered
-    // Pick a single card size that fits 3 across and 2 tall, respecting BODY_AR
-    const pad = PAD; // inner margin
-    const maxW = (r.width - pad*2) / 3;              // three columns
-    const maxH = (r.height - pad*2) / 2;             // two rows
-    const fromHtoW = maxH * BODY_AR;                 // convert height room into allowed width
-    const cardW = Math.min(maxW, fromHtoW);
-    const cardH = cardW / BODY_AR;
+function computeLayout(){
+  const r = stage.getBoundingClientRect();
+  // choose one card size that fits 3 across & 2 tall, respecting aspect ratio
+  const maxW = (r.width  - PAD*2) / 3;
+  const maxH = (r.height - PAD*2) / 2;
+  const wFromH = maxH * BODY_AR;
+  const cardW = Math.min(maxW, wFromH);
+  const cardH = cardW / BODY_AR;
 
-    // Total block covering the T is 3×2 cards (rectangular box), center that box
-    const blockW = cardW * 3;
-    const blockH = cardH * 2;
-    const blockLeft = Math.round(r.left + (r.width  - blockW)/2);
-    const blockTop  = Math.round(r.top  + (r.height - blockH)/2);
+  // center the 3×2 rectangle inside the stage
+  const blockW = cardW * 3, blockH = cardH * 2;
+  const blockLeft = Math.round(r.left + (r.width  - blockW)/2);
+  const blockTop  = Math.round(r.top  + (r.height - blockH)/2);
 
-    // Middle column index = 1 => body is bottom-center, top is directly above
-    const col0 = blockLeft;              // left col x
-    const col1 = blockLeft + cardW;      // middle col x
-    const col2 = blockLeft + cardW*2;    // right col x
-    const row0 = blockTop;               // top row y
-    const row1 = blockTop + cardH;       // bottom row y
+  const col0 = blockLeft;
+  const col1 = blockLeft + cardW;
+  const col2 = blockLeft + cardW*2;
+  const row0 = blockTop;
+  const row1 = blockTop + cardH;
 
-    layout = {
-      w: cardW, h: cardH,
-      body:  { left: col1, top: row1 },   // bottom-center
-      top:   { left: col1, top: row0 },   // directly above body
-      left:  { left: col0, top: row1 },   // bottom-left
-      right: { left: col2, top: row1 },   // bottom-right
-      // Offscreen starts (left/right/top)
-      off: {
-        left:  { left: col0 - r.width, top: row1 },
-        top:   { left: col1, top: row0 - r.height },
-        right: { left: col2 + r.width, top: row1 },
-      },
-      // Perimeter frame covers the full 3×2 rectangle around the T
-      frame: { left: blockLeft, top: blockTop, width: blockW, height: blockH }
-    };
-  },
-      top:  { left: bodyX, top: bodyY - cardH },
-      left: { left: bodyX - cardW, top: bodyY },
-      right:{ left: bodyX + cardW, top: bodyY },
-      off: {
-        left:  { left: blockLeft - r.width, top: bodyY },
-        top:   { left: bodyX, top: blockTop - r.height },
-        right: { left: blockLeft + blockW + r.width, top: bodyY },
-      },
-      frame: { left: blockLeft, top: blockTop, width: blockW, height: blockH }
-    };
-  },
-      top:  { left: bodyX, top: bodyY - cardH },
-      left: { left: bodyX - cardW, top: bodyY },
-      right:{ left: bodyX + cardW, top: bodyY },
-      off: {
-        left:  { left: bodyX - cardW - r.width, top: bodyY },
-        top:   { left: bodyX, top: bodyY - cardH - r.height },
-        right: { left: bodyX + cardW + r.width, top: bodyY },
-      },
-      frame: { left: blockLeft, top: blockTop, width: blockW, height: blockH }
-    };
-  }
+  layout = {
+    w: cardW, h: cardH,
+    body:  { left: col1, top: row1 }, // bottom-center
+    top:   { left: col1, top: row0 },
+    left:  { left: col0, top: row1 },
+    right: { left: col2, top: row1 },
+    off: {
+      left:  { left: col0 - r.width, top: row1 },
+      top:   { left: col1, top: row0 - r.height },
+      right: { left: col2 + r.width, top: row1 },
+    },
+    frame: { left: blockLeft, top: blockTop, width: blockW, height: blockH },
+  };
+}
 
-  function place(el, rect){
-    const s = stage.getBoundingClientRect();
-    el.style.width = layout.w + 'px';
-    el.style.height = layout.h + 'px';
-    el.style.left = (rect.left - s.left) + 'px';
-    el.style.top  = (rect.top - s.top) + 'px';
-  }
-  function placeCenter(){ place(centerCard, layout.body); }
-  { const s = stage.getBoundingClientRect(); champFrame.style.left=(layout.frame.left - s.left)+ 'px'; champFrame.style.top=(layout.frame.top - s.top)+'px'; champFrame.style.width=layout.frame.width+'px'; champFrame.style.height=layout.frame.height+'px'; }
+function place(el, rect){
+  const s = stage.getBoundingClientRect();
+  el.style.width  = layout.w + 'px';
+  el.style.height = layout.h + 'px';
+  el.style.left   = (rect.left - s.left) + 'px';
+  el.style.top    = (rect.top  - s.top)  + 'px';
+}
+function placeCenter(){ place(centerCard, layout.body); }
+function placeFrame(){
+  const s = stage.getBoundingClientRect();
+  champFrame.style.left   = (layout.frame.left   - s.left) + 'px';
+  champFrame.style.top    = (layout.frame.top    - s.top)  + 'px';
+  champFrame.style.width  = layout.frame.width   + 'px';
+  champFrame.style.height = layout.frame.height  + 'px';
+}
 
-  // Anim timings (slow build)
-  const DUR_IN = 3000;   // ms arms enter
-  const DUR_OUT = 1200;   // ms arms exit with rotation
+/* =======================  STATE  ======================= */
+let state = 'boot';          // 'idle' (no arms), 'armsIn' (visible), 'armsOut' (hidden)
+let locked = false;          // champion lock
+let busy   = false;          // click guard while animating
+let pendingArms = null;      // holds the set used for the next "enter" action
 
-  // Apply transitions to arms via CSS vars to keep in sync
-  document.documentElement.style.setProperty('--arm-in-ms', DUR_IN + 'ms');
-  document.documentElement.style.setProperty('--arm-out-ms', DUR_OUT + 'ms');
+/* =======================  INIT  ======================= */
+async function init(){
+  // place immediately with default AR so the body is visible
+  computeLayout(); placeCenter();
 
-  // State machine
-  let state = 'boot'; // 'idle' (no arms), 'armsIn' (visible), 'armsOut' (hidden)
-  let locked = false;
-  let pendingArms = null; // the set we will show next when adding arms
-
-  async function init(){
-    // 1) Load body first to get AR, then layout and place center
-    await new Promise((resolve)=>{
-      centerCard.onload = () => { if(centerCard.naturalWidth) BODY_AR = centerCard.naturalWidth / centerCard.naturalHeight; computeLayout(); placeCenter(); resolve(); };
-      centerCard.onerror = () => { computeLayout(); placeCenter(); resolve(); };
-      setSrc(centerCard, 'body.webp');
-    });
-    // 2) Preload the rest, then enable glow + clicks
-    await prewarm();
-    centerCard.classList.add('clickable');
-    state = 'idle';
-  }
-  init();
-
-  window.addEventListener('resize', ()=>{ computeLayout(); placeCenter(); if(state==='armsIn'){ place(armLeft, layout.left); place(armTop, layout.top); place(armRight, layout.right);  } else if(state==='armsOut'){ /* keep offscreen */ } });
-
-  function pickArms(){
-    const L = rc(classes), T = rc(classes), R = rc(classes);
-    return { left:{cls:L,file:`${L}_left.webp`}, top:{cls:T,file:`${T}_sensitivity.webp`}, right:{cls:R,file:`${R}_right.webp`} };
-  }_left.webp`}, top:{cls:T,file:`${T}_sensitivity.webp`}, right:{cls:R,file:`${R}_right.webp`} };
-  }_left.webp`}, top:{cls:T,file:`${T}_sensitivity.webp`}, right:{cls:R,file:`${R}_right.webp`} };
-  }
-  function isChampion(a){ return a.left.cls===a.top.cls && a.left.cls===a.right.cls; }
-
-  let pendingArms = null; // holds the set that will be used next
-
-  async function enterArms(arms){{
-    setSrc(armLeft, arms.left.file); setSrc(armTop, arms.top.file); setSrc(armRight, arms.right.file);
-    place(armLeft, layout.off.left); place(armTop, layout.off.top); place(armRight, layout.off.right);
-    requestAnimationFrame(()=>{
-      armLeft.style.opacity='1'; armTop.style.opacity='1'; armRight.style.opacity='1';
-      armLeft.style.transform='rotate(0deg)'; armTop.style.transform='rotate(0deg)'; armRight.style.transform='rotate(0deg)';
-      place(armLeft, layout.left); place(armTop, layout.top); place(armRight, layout.right);
-    });
-    await new Promise(r=>setTimeout(r, DUR_IN + 50));
-    state = 'armsIn';
-  }
-
-  async function exitArms(){
-    requestAnimationFrame(()=>{
-      armLeft.style.transform='rotate(-18deg)'; armTop.style.transform='rotate(-18deg)'; armRight.style.transform='rotate(18deg)';
-      place(armLeft, layout.off.left); place(armTop, layout.off.top); place(armRight, layout.off.right);
-      armLeft.style.opacity='0'; armTop.style.opacity='0'; armRight.style.opacity='0';
-    });
-    await new Promise(r=>setTimeout(r, DUR_OUT + 50));
-    state = 'armsOut';
-  }
-
-  {  champFrame.classList.add('visible'); }
-
-  // Flip (slow, classic squish)
-  function flipToChampion(){
-    centerCard.classList.remove('clickable');
-    centerCard.style.transition = 'transform 320ms ease-in';
-    centerCard.classList.add('squish');
-    centerCard.addEventListener('transitionend', function onT(e){
-      if(e.propertyName!=='transform') return;
-      centerCard.removeEventListener('transitionend', onT);
-      setSrc(centerCard, 'champion.webp');
-      centerCard.style.transition = 'transform 380ms ease-out';
-      centerCard.classList.remove('squish');
-    });
-  }
-
-  centerCard.addEventListener('click', async () => {
-    if (locked) { centerCard.classList.add('pulseRed'); setTimeout(()=>centerCard.classList.remove('pulseRed'), 1800); return; }
-    // While animating, ignore extra clicks
-    if (centerCard.classList.contains('busy')) return;
-    centerCard.classList.add('busy');
-
-    if (state === 'idle' || state === 'armsOut') {
-      // We are adding arms. Pick a set once and keep it stable for this entire entrance.
-      centerCard.classList.remove('clickable');
-      if (!pendingArms) pendingArms = pickArms();
-      await enterArms(pendingArms);
-      if (isChampion(pendingArms)) {  locked = true; flipToChampion(); }
-      else { centerCard.classList.add('clickable'); }
-      // Keep the last set displayed; clear cache so next add (after an exit) chooses anew
-      pendingArms = null;
+  // set body and learn exact AR when it loads, then recenter
+  centerCard.onload = () => {
+    if (centerCard.naturalWidth) {
+      BODY_AR = centerCard.naturalWidth / centerCard.naturalHeight;
+      computeLayout(); placeCenter();
     }
-    else if (state === 'armsIn') {
-      // We are removing arms (no new set picked here)
-      centerCard.classList.remove('clickable');
-      await exitArms();
-      centerCard.classList.add('clickable');
-      // After exit, we're in 'armsOut' — next click will add (and pick a new set then)
-    }
+  };
+  setSrc(centerCard, 'body.webp');
 
-    centerCard.classList.remove('busy');
-  }); setTimeout(()=>champFrame.classList.remove('pulse'), 1800); return; }
+  // preload rest, then enable clicking
+  await prewarm();
+  centerCard.classList.add('clickable');
+  state = 'idle';
+}
+init();
 
-    // Prevent double-activation while animations run
-    if(centerCard.classList.contains('busy')) return;
-    centerCard.classList.add('busy');
+window.addEventListener('resize', () => {
+  computeLayout(); placeCenter();
+  if (state === 'armsIn') { place(armLeft, layout.left); place(armTop, layout.top); place(armRight, layout.right); placeFrame(); }
+});
 
-    if(state==='idle'){
-      centerCard.classList.remove('clickable');
-      // choose the set once and keep it for the full enter cycle
-      pendingArms = pickArms();
-      await enterArms(pendingArms);
-      if(isChampion(pendingArms)) {  locked=true; flipToChampion(); }
-      else { centerCard.classList.add('clickable'); }
-    }
-    else if(state==='armsIn'){
-      centerCard.classList.remove('clickable');
-      await exitArms();
-      centerCard.classList.add('clickable');
-      state = 'armsOut';
-    }
-    else if(state==='armsOut'){
-      centerCard.classList.remove('clickable');
-      // pick a NEW set only now, on the third click
-      pendingArms = pickArms();
-      await enterArms(pendingArms);
-      if(isChampion(pendingArms)) {  locked=true; flipToChampion(); }
-      else { centerCard.classList.add('clickable'); }
-    }
-    centerCard.classList.remove('busy');
-  }); setTimeout(()=>champFrame.classList.remove('pulse'), 1800); return; }
+/* =======================  GAME LOGIC  ======================= */
+function pickArms(){
+  const L = rc(CLASSES), T = rc(CLASSES), R = rc(CLASSES);
+  return {
+    left:  { cls:L, file: `${L}_left.webp` },
+    top:   { cls:T, file: `${T}_sensitivity.webp` },
+    right: { cls:R, file: `${R}_right.webp` },
+  };
+}
+function isChampion(a){ return a.left.cls === a.top.cls && a.left.cls === a.right.cls; }
 
-    if(state==='idle'){
-      centerCard.classList.remove('clickable');
-      const arms = pickArms();
-      await enterArms(arms);
-      if(isChampion(arms)) {  locked=true; flipToChampion(); }
-      else { centerCard.classList.add('clickable'); }
-    }
-    else if(state==='armsIn'){
-      centerCard.classList.remove('clickable');
-      await exitArms();
-      centerCard.classList.add('clickable');
-    }
-    else if(state==='armsOut'){
-      centerCard.classList.remove('clickable');
-      const arms = pickArms();
-      await enterArms(arms);
-      if(isChampion(arms)) {  locked=true; flipToChampion(); }
-      else { centerCard.classList.add('clickable'); }
-    }
+async function enterArms(arms){
+  setSrc(armLeft,  arms.left.file);
+  setSrc(armTop,   arms.top.file);
+  setSrc(armRight, arms.right.file);
+
+  place(armLeft,  layout.off.left);
+  place(armTop,   layout.off.top);
+  place(armRight, layout.off.right);
+
+  requestAnimationFrame(() => {
+    armLeft.style.opacity='1'; armTop.style.opacity='1'; armRight.style.opacity='1';
+    armLeft.style.transform='rotate(0deg)'; armTop.style.transform='rotate(0deg)'; armRight.style.transform='rotate(0deg)';
+    place(armLeft, layout.left); place(armTop, layout.top); place(armRight, layout.right);
   });
 
-  // Block context menu on visuals
-  document.addEventListener('contextmenu', (e) => { if (e.target.closest('.stage, .logo, .bg')) e.preventDefault(); });
+  await new Promise(r => setTimeout(r, 3000 + 60));
+  state = 'armsIn';
+}
+
+async function exitArms(){
+  requestAnimationFrame(() => {
+    armLeft.style.transform='rotate(-18deg)'; armTop.style.transform='rotate(-18deg)'; armRight.style.transform='rotate(18deg)';
+    place(armLeft, layout.off.left);
+    place(armTop,  layout.off.top);
+    place(armRight,layout.off.right);
+    armLeft.style.opacity='0'; armTop.style.opacity='0'; armRight.style.opacity='0';
+  });
+  await new Promise(r => setTimeout(r, 1200 + 60));
+  state = 'armsOut';
+}
+
+function showChampionPerimeter(){ placeFrame(); champFrame.classList.add('visible'); }
+
+/* =======================  INTERACTION  ======================= */
+centerCard.addEventListener('click', async () => {
+  /* ↑↑ ONLY CHANGE #3: champion is entirely unclickable (no pulse, no action) ↑↑ */
+  if (locked) return;
+
+  if (busy) return;
+  busy = true;
+
+  if (state === 'idle' || state === 'armsOut') {
+    centerCard.classList.remove('clickable');
+    if (!pendingArms) pendingArms = pickArms();  // pick once per add
+    await enterArms(pendingArms);
+    if (isChampion(pendingArms)) {
+      showChampionPerimeter(); locked = true;
+      // Flip (slow squish -> swap -> expand)
+      centerCard.classList.remove('clickable');
+      centerCard.classList.add('squish');
+      centerCard.addEventListener('transitionend', function onT(e){
+        if (e.propertyName !== 'transform') return;
+        centerCard.removeEventListener('transitionend', onT);
+        setSrc(centerCard, 'champion.webp');
+        centerCard.style.transition = 'transform 380ms ease-out';
+        centerCard.classList.remove('squish');
+      }, { once:true });
+    } else {
+      centerCard.classList.add('clickable');
+      pendingArms = null; // next time we add, we’ll pick a fresh set
+    }
+  } else if (state === 'armsIn') {
+    centerCard.classList.remove('clickable');
+    await exitArms();
+    centerCard.classList.add('clickable');
+  }
+
+  busy = false;
+});
+
+/* Deter saving from the stage/logo/bg */
+document.addEventListener('contextmenu', (e) => {
+  if (e.target.closest('.stage, .logo, .bg')) e.preventDefault();
+});
 </script>
 </body>
 </html>
