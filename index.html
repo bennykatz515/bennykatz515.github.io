@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="en">
 <meta charset="utf-8" />
@@ -25,56 +26,48 @@
     background-image: url('RedBackdrop.webp?v=2');
   }
 
-/* --- Tighter layout & larger logo --- */
-.wrap { 
-  min-height: 100svh;
-  display: grid;
-  grid-template-rows: auto 1fr auto;
-  gap: 4px;                 /* was 8px */
-  padding: 4px 8px;         /* was 6px 8px */
-}
+  /* Page layout */
+  .wrap { min-height: 100svh; display: grid; grid-template-rows: auto 1fr auto; gap: 8px; padding: 6px 8px; }
+  header { display: grid; place-items: center; }
+  main   { display: grid; place-items: center; }
+  footer { display: grid; place-items: center; }
 
-.logo  { 
-  width: min(62vw, 380px);  /* was min(54vw, 320px) */
-  height: auto;
-  display: block;
-  margin: 0 auto 0;         /* was 0 auto 2px */
-  pointer-events: none;
-  -webkit-user-drag: none;
-}
+  /* tighten logo margin a hair */
+  .logo  { width: min(54vw, 320px); height: auto; display:block; margin: 0 auto 2px; pointer-events:none; -webkit-user-drag:none; }
 
-.stage { 
-  position: relative;
-  width: min(92vw, 480px);
-  height: min(58svh, 520px); /* was min(66svh, 560px) */
-  margin: 0 auto;
-  display: grid;
-  place-items: center;
-}
+  /* ↓ make stage a bit shorter so cards sit closer to both logo & footer */
+  .stage { position: relative; width: min(92vw, 480px); height: min(66svh, 560px);
+           margin: 0 auto; display:grid; place-items:center; }
 
-body {
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, sans-serif;
-  color: #fff;
-  background: #000;
-  overscroll-behavior: none;
-  touch-action: manipulation;
-  user-select: none;
-  padding-bottom: max(12px, env(safe-area-inset-bottom)); /* was 20px */
-}
+  .cardArea { position: absolute; inset: 0; }
+  .card     { position:absolute; image-rendering:auto; filter: drop-shadow(0 6px 16px rgba(0,0,0,.45)); }
 
-.cta { 
-  text-align: center;
-  font-weight: 700;
-  letter-spacing: .02em;
-  text-shadow: 0 2px 8px rgba(0,0,0,.6);
-  line-height: 1.1;          /* tighter footer copy */
-}
-.cta .small { 
-  opacity: .85; 
-  font-weight: 600; 
-  margin-bottom: 2px;        /* add tiny separation */
-}
+  /* Body (center card) */
+  .centerCard { cursor:pointer; transition: transform 320ms ease-in, filter 300ms ease-in-out; }
+  .centerCard.squish { transform-origin:center; transform: scaleX(0.02); }
+  @keyframes pulseGlow {
+    0%   { filter: drop-shadow(0 0 0 rgba(255,234,0,0)) drop-shadow(0 6px 16px rgba(0,0,0,.45)); }
+    50%  { filter: drop-shadow(0 0 22px rgba(255,234,0,.9)) drop-shadow(0 6px 16px rgba(0,0,0,.45)); }
+    100% { filter: drop-shadow(0 0 0 rgba(255,234,0,0)) drop-shadow(0 6px 16px rgba(0,0,0,.45)); }
+  }
+  .clickable { animation: pulseGlow 1.4s ease-in-out infinite; }
 
+  /* Arms (slow entrances/exits) */
+  :root { --arm-in-ms: 3000ms; --arm-out-ms: 1200ms; }
+  .arm {
+    opacity:0; pointer-events:none;
+    transition:
+      left var(--arm-in-ms) cubic-bezier(.16,1,.3,1),
+      top  var(--arm-in-ms) cubic-bezier(.16,1,.3,1),
+      transform var(--arm-in-ms) cubic-bezier(.16,1,.3,1),
+      opacity 500ms ease-out;
+  }
+
+  /* Champion perimeter frame — hidden per request */
+  .champFrame { display:none !important; }
+
+  .cta { text-align:center; font-weight:700; letter-spacing:.02em; text-shadow:0 2px 8px rgba(0,0,0,.6); }
+  .cta .small { opacity:.85; font-weight:600; }
 
   img { -webkit-user-drag: none; user-drag: none; }
 </style>
@@ -157,7 +150,7 @@ function computeLayout(){
   // bias upward inside the stage
   const freeY     = rH - blockH;
   const blockLeft = Math.round((rW - blockW)/2);
-  const blockTop  = Math.round(freeY * 0.18);
+  const blockTop  = Math.round(freeY * 0.3);
 
   const col0 = blockLeft;
   const col1 = blockLeft + cardW;
