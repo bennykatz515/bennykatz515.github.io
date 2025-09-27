@@ -10,12 +10,10 @@
   body {
     font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, sans-serif;
     color: #fff;
-    /* solid fallback under the bg image */
     background: #000;
     overscroll-behavior: none;
     touch-action: manipulation;
     user-select: none;
-    /* keep footer from being cut off on phones */
     padding-bottom: max(20px, env(safe-area-inset-bottom));
   }
 
@@ -33,10 +31,11 @@
   main   { display: grid; place-items: center; }
   footer { display: grid; place-items: center; }
 
-  .logo  { width: min(54vw, 320px); height: auto; display:block; margin: 2px auto 4px; pointer-events:none; -webkit-user-drag:none; }
+  /* tighten logo margin a hair */
+  .logo  { width: min(54vw, 320px); height: auto; display:block; margin: 0 auto 2px; pointer-events:none; -webkit-user-drag:none; }
 
-  /* ↑↑ ONLY CHANGE #1: stage bigger so cards are ~50% larger ↑↑ */
-  .stage { position: relative; width: min(92vw, 480px); height: min(72svh, 620px);
+  /* ↓ make stage a bit shorter so cards sit closer to both logo & footer */
+  .stage { position: relative; width: min(92vw, 480px); height: min(66svh, 560px);
            margin: 0 auto; display:grid; place-items:center; }
 
   .cardArea { position: absolute; inset: 0; }
@@ -63,21 +62,8 @@
       opacity 500ms ease-out;
   }
 
-  /* Champion perimeter frame (kept as before) */
-  .champFrame {
-    position:absolute; pointer-events:none;
-    border: 6px solid rgba(255,0,0,.65);
-    border-radius: 10px;
-    opacity:0; box-shadow: 0 0 0 rgba(255,0,0,0);
-    transition: opacity 280ms ease;
-  }
-  .champFrame.visible { opacity:1; }
-  @keyframes pulseRed {
-    0% { box-shadow: 0 0 0 rgba(255,0,0,0.15); }
-    50%{ box-shadow: 0 0 28px rgba(255,0,0,.95); }
-    100%{ box-shadow: 0 0 0 rgba(255,0,0,0.15); }
-  }
-  .champFrame.pulse { animation: pulseRed 1.8s ease-in-out 1; }
+  /* Champion perimeter frame — hidden per request */
+  .champFrame { display:none !important; }
 
   .cta { text-align:center; font-weight:700; letter-spacing:.02em; text-shadow:0 2px 8px rgba(0,0,0,.6); }
   .cta .small { opacity:.85; font-weight:600; }
@@ -145,23 +131,22 @@ const rc      = (arr) => arr[Math.floor(Math.random()*arr.length)];
 /* =======================  LAYOUT (3×2 T)  ======================= */
 let BODY_AR = 375/525; // default portrait ratio so we can place immediately
 let layout  = null;    // {w,h, body, top, left, right, off, frame}
-
-/* ↓↓ ONLY CHANGE #2: smaller padding lets cards grow inside the bigger stage ↓↓ */
 const PAD   = 6;
 
 function computeLayout(){
   const r = stage.getBoundingClientRect();
-  // choose one card size that fits 3 across & 2 tall, respecting aspect ratio
   const maxW = (r.width  - PAD*2) / 3;
   const maxH = (r.height - PAD*2) / 2;
   const wFromH = maxH * BODY_AR;
   const cardW = Math.min(maxW, wFromH);
   const cardH = cardW / BODY_AR;
 
-  // center the 3×2 rectangle inside the stage
   const blockW = cardW * 3, blockH = cardH * 2;
+
+  // bias the block a bit upward (closer to logo) instead of perfectly centered
+  const freeY = r.height - blockH;
   const blockLeft = Math.round(r.left + (r.width  - blockW)/2);
-  const blockTop  = Math.round(r.top  + (r.height - blockH)/2);
+  const blockTop  = Math.round(r.top  + freeY * 0.35); // 0.35 < 0.5 ⇒ higher in the stage
 
   const col0 = blockLeft;
   const col1 = blockLeft + cardW;
@@ -192,13 +177,6 @@ function place(el, rect){
   el.style.top    = (rect.top  - s.top)  + 'px';
 }
 function placeCenter(){ place(centerCard, layout.body); }
-function placeFrame(){
-  const s = stage.getBoundingClientRect();
-  champFrame.style.left   = (layout.frame.left   - s.left) + 'px';
-  champFrame.style.top    = (layout.frame.top    - s.top)  + 'px';
-  champFrame.style.width  = layout.frame.width   + 'px';
-  champFrame.style.height = layout.frame.height  + 'px';
-}
 
 /* =======================  STATE  ======================= */
 let state = 'boot';          // 'idle' (no arms), 'armsIn' (visible), 'armsOut' (hidden)
@@ -208,10 +186,8 @@ let pendingArms = null;      // holds the set used for the next "enter" action
 
 /* =======================  INIT  ======================= */
 async function init(){
-  // place immediately with default AR so the body is visible
   computeLayout(); placeCenter();
 
-  // set body and learn exact AR when it loads, then recenter
   centerCard.onload = () => {
     if (centerCard.naturalWidth) {
       BODY_AR = centerCard.naturalWidth / centerCard.naturalHeight;
@@ -220,7 +196,6 @@ async function init(){
   };
   setSrc(centerCard, 'body.webp');
 
-  // preload rest, then enable clicking
   await prewarm();
   centerCard.classList.add('clickable');
   state = 'idle';
@@ -229,7 +204,7 @@ init();
 
 window.addEventListener('resize', () => {
   computeLayout(); placeCenter();
-  if (state === 'armsIn') { place(armLeft, layout.left); place(armTop, layout.top); place(armRight, layout.right); placeFrame(); }
+  if (state === 'armsIn') { place(armLeft, layout.left); place(armTop, layout.top); place(armRight, layout.right); }
 });
 
 /* =======================  GAME LOGIC  ======================= */
@@ -274,23 +249,19 @@ async function exitArms(){
   state = 'armsOut';
 }
 
-function showChampionPerimeter(){ placeFrame(); champFrame.classList.add('visible'); }
-
 /* =======================  INTERACTION  ======================= */
 centerCard.addEventListener('click', async () => {
-  /* ↑↑ ONLY CHANGE #3: champion is entirely unclickable (no pulse, no action) ↑↑ */
-  if (locked) return;
+  if (locked) return; // champion unclickable
 
   if (busy) return;
   busy = true;
 
   if (state === 'idle' || state === 'armsOut') {
     centerCard.classList.remove('clickable');
-    if (!pendingArms) pendingArms = pickArms();  // pick once per add
+    if (!pendingArms) pendingArms = pickArms();
     await enterArms(pendingArms);
     if (isChampion(pendingArms)) {
-      showChampionPerimeter(); locked = true;
-      // Flip (slow squish -> swap -> expand)
+      locked = true;
       centerCard.classList.remove('clickable');
       centerCard.classList.add('squish');
       centerCard.addEventListener('transitionend', function onT(e){
@@ -302,7 +273,7 @@ centerCard.addEventListener('click', async () => {
       }, { once:true });
     } else {
       centerCard.classList.add('clickable');
-      pendingArms = null; // next time we add, we’ll pick a fresh set
+      pendingArms = null;
     }
   } else if (state === 'armsIn') {
     centerCard.classList.remove('clickable');
