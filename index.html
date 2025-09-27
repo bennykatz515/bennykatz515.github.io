@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="en">
 <meta charset="utf-8" />
@@ -31,7 +32,7 @@
   main   { display: grid; place-items: center; }
   footer { display: grid; place-items: center; }
 
-  /* bigger logo */
+  /* logo controls */
   .logo {
   width: min(54vw, 320px);   /* keep your current logical size */
   height: auto;
@@ -40,10 +41,10 @@
   pointer-events: none;
   -webkit-user-drag: none;
 
-  /* visually enlarge without changing layout box */
-  transform: scale(1.25);
-  transform-origin: center;   /* stays centered where it is */
-  will-change: transform;     /* smoother on mobile */
+  /* visually enlarge without changing layout box, and push it lower */
+  transform: scale(1.5) translateY(32px); /* adjust px value to taste */
+  transform-origin: center;
+  will-change: transform;
 }
 
 
