@@ -181,43 +181,19 @@ function place(el, rect){
 }
 function placeCenter(){ place(centerCard, layout.body); }
 
-/* Keep layout correct on resize/scroll — without mid-animation "explosions" */
-function withoutTransitions(nodes, fn) {
-  // Temporarily turn off transitions to avoid tweening huge deltas on reflow
-  const prev = nodes.map(n => n.style.transition);
-  nodes.forEach(n => { n.style.transition = 'none'; });
-  fn();
-  // Force reflow to commit styles before restoring transitions
-  void document.body.offsetHeight;
-  nodes.forEach((n, i) => { n.style.transition = prev[i] || ''; });
-}
-
+/* Keep layout correct on resize/scroll */
 function relayoutVisible(){
-  const els = [centerCard, armLeft, armTop, armRight];
-
-  withoutTransitions(els, () => {
-    computeLayout();
-    placeCenter();
-
-    if (state === 'armsIn') {
-      // Arms are visible: snap them to the correct in-frame spots
-      place(armLeft,  layout.left);
-      place(armTop,   layout.top);
-      place(armRight, layout.right);
-      // Maintain their current opacity/rotation — no change here
-    } else {
-      // Arms are hidden or offstage: keep them offscreen relative to new stage size
-      place(armLeft,  layout.off.left);
-      place(armTop,   layout.off.top);
-      place(armRight, layout.off.right);
-    }
-  });
+  computeLayout(); placeCenter();
+  if (state === 'armsIn') {
+    place(armLeft, layout.left); place(armTop, layout.top); place(armRight, layout.right);
+  } else {
+    // keep off-positions consistent when hidden
+    place(armLeft, layout.off.left); place(armTop, layout.off.top); place(armRight, layout.off.right);
+  }
 }
 
-// Re-layout on resize/scroll; passive avoids scroll jank
-window.addEventListener('resize', relayoutVisible, { passive: true });
-window.addEventListener('scroll',  relayoutVisible, { passive: true });
-
+window.addEventListener('resize', relayoutVisible);
+window.addEventListener('scroll', relayoutVisible, { passive: true });
 
 /* =======================  STATE  ======================= */
 let state = 'boot';          // 'idle' (no arms), 'armsIn' (visible), 'armsOut' (hidden)
