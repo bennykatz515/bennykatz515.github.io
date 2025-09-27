@@ -149,12 +149,12 @@
       </div>
     </footer>
 
-    <div style="text-align:center; font-size:0.8rem; opacity:0.75; padding:6px 0;">$1</div>
+    <div style="text-align:center; font-size:0.8rem; opacity:0.75; padding:6px 0;">© 2025 Car World Colosseum</div>
   </div>  </div>
 
 <script>
   /* ------------------------------------------------------------
-   * Equal-size cards by aspect, slower entrances, separated exit/enter, champion perimeter
+   * Robust init: center-first layout, slow animations, perimeter pulse, separated actions
    * ---------------------------------------------------------- */
   const manifest = [
     'RedBackdrop.webp', 'logo.webp', 'body.webp', 'champion.webp',
@@ -176,7 +176,6 @@
 
   function preload(url) {
     return new Promise((resolve) => {
-      if (!/\.(webp|png|jpg|jpeg|gif|svg)(\?.*)?$/i.test(url)) { resolve(); return; }
       const img = new Image(); img.onload = img.onerror = () => resolve(); img.src = url;
     });
   }
@@ -184,41 +183,27 @@
   function setSrc(img, file){ img.src = file; }
   function rc(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
 
-  // Natural aspect ratio of the body art
-  const bodyProbe = new Image(); bodyProbe.src = 'body.webp';
-  let BODY_AR = 375/525; // fallback if not loaded yet
-  bodyProbe.onload = () => { if(bodyProbe.naturalWidth) BODY_AR = bodyProbe.naturalWidth / bodyProbe.naturalHeight; }; bodyProbe.src = 'body.webp';
-  let BODY_AR = 375/525; // fallback if not loaded yet
-  bodyProbe.onload = () => { if(bodyProbe.naturalWidth) BODY_AR = bodyProbe.naturalWidth / bodyProbe.naturalHeight; };
-
-  // Layout state
-  let layout = null; // {w,h,size, body, top, left, right, off}
-  const PAD = 8; // keep away from phone edges
+  // Layout state (respect original aspect ratio from body image)
+  let BODY_AR = 375/525; // fallback
+  let layout = null; // {w,h, body, top, left, right, off, frame}
+  const PAD = 10; // inner safety margin
 
   function computeLayout(){
     const r = stage.getBoundingClientRect();
-    const pad = 10; // inner safety margin
-    // Card must fit in a 2x2 block centered in stage, respecting aspect ratio
-    const maxW = (r.width - pad*2) / 2;
-    const maxH = (r.height - pad*2) / 2;
+    const maxW = (r.width - PAD*2) / 2;
+    const maxH = (r.height - PAD*2) / 2;
     const fromHtoW = maxH * BODY_AR;
     const cardW = Math.min(maxW, fromHtoW);
     const cardH = cardW / BODY_AR;
-
-    // Center the 2x2 block in the stage
-    const blockW = cardW * 2;
-    const blockH = cardH * 2;
+    const blockW = cardW * 2, blockH = cardH * 2;
     const blockLeft = Math.round(r.left + (r.width - blockW)/2);
     const blockTop  = Math.round(r.top  + (r.height - blockH)/2);
-
-    // Body is bottom-right of the 2x2 block's center (i.e., center of stage)
-    const bodyX = blockLeft + cardW; // center column
-    const bodyY = blockTop  + cardH; // center row (bottom cell)
+    const bodyX = blockLeft + cardW, bodyY = blockTop + cardH;
 
     layout = {
       w: cardW, h: cardH,
       body: { left: bodyX, top: bodyY },
-      top:  { left: bodyX,      top: bodyY - cardH },
+      top:  { left: bodyX, top: bodyY - cardH },
       left: { left: bodyX - cardW, top: bodyY },
       right:{ left: bodyX + cardW, top: bodyY },
       off: {
@@ -227,17 +212,6 @@
         right: { left: bodyX + cardW + r.width, top: bodyY },
       },
       frame: { left: blockLeft, top: blockTop, width: blockW, height: blockH }
-    };
-  },
-      top:  { left: bodyX, top: bodyY - cardH },
-      left: { left: bodyX - cardW, top: bodyY },
-      right:{ left: bodyX + cardW, top: bodyY },
-      off: {
-        left: { left: bodyX - cardW - r.width, top: bodyY },
-        top:  { left: bodyX, top: bodyY - cardH - r.height },
-        right:{ left: bodyX + cardW + r.width, top: bodyY },
-      },
-      frame: { left: bodyX - cardW, top: bodyY - cardH, width: cardW*2, height: cardH*2 }
     };
   }
 
@@ -251,34 +225,40 @@
   function placeCenter(){ place(centerCard, layout.body); }
   function placeFrame(){ const s = stage.getBoundingClientRect(); champFrame.style.left=(layout.frame.left - s.left)+ 'px'; champFrame.style.top=(layout.frame.top - s.top)+'px'; champFrame.style.width=layout.frame.width+'px'; champFrame.style.height=layout.frame.height+'px'; }
 
-  let state = 'idle'; // 'idle' (no arms), 'armsIn', 'armsOut'
+  // Anim timings (slow build)
+  const DUR_IN = 2000;   // ms arms enter
+  const DUR_OUT = 800;   // ms arms exit with rotation
+
+  // Apply transitions to arms via CSS vars to keep in sync
+  document.documentElement.style.setProperty('--arm-in-ms', DUR_IN + 'ms');
+  document.documentElement.style.setProperty('--arm-out-ms', DUR_OUT + 'ms');
+
+  // State machine
+  let state = 'boot'; // boot -> idle -> armsIn/armsOut
   let locked = false;
 
-  (async function init(){
-    computeLayout();
-    setSrc(centerCard, 'body.webp');
-    placeCenter();
-    // Preload all assets before enabling interactions
+  async function init(){
+    // 1) Set body src and learn its AR, then layout & place
+    await new Promise((resolve)=>{
+      centerCard.onload = () => { if(centerCard.naturalWidth) BODY_AR = centerCard.naturalWidth / centerCard.naturalHeight; computeLayout(); placeCenter(); resolve(); };
+      centerCard.onerror = () => { computeLayout(); placeCenter(); resolve(); };
+      setSrc(centerCard, 'body.webp');
+    });
+
+    // 2) Preload everything else, then enable clicking with pulsing glow
     await prewarm();
     centerCard.classList.add('clickable');
     state = 'idle';
-  })();
+  }
+  init();
 
-  window.addEventListener('resize', ()=>{
-    computeLayout(); placeCenter();
-    if(state==='armsIn'){ place(armLeft, layout.left); place(armTop, layout.top); place(armRight, layout.right); placeFrame(); }
-  });
+  window.addEventListener('resize', ()=>{ computeLayout(); placeCenter(); if(state==='armsIn'){ place(armLeft, layout.left); place(armTop, layout.top); place(armRight, layout.right); placeFrame(); } else if(state==='armsOut'){ /* keep offscreen */ } });
 
   function pickArms(){
     const L = rc(classes), T = rc(classes), R = rc(classes);
-    return {
-      left: { cls: L, file: `${L}_left.webp` },
-      top:  { cls: T, file: `${T}_sensitivity.webp` },
-      right:{ cls: R, file: `${R}_right.webp` },
-    };
+    return { left:{cls:L,file:`${L}_left.webp`}, top:{cls:T,file:`${T}_sensitivity.webp`}, right:{cls:R,file:`${R}_right.webp`} };
   }
-
-  function isChampion(arms){ return arms.left.cls===arms.top.cls && arms.left.cls===arms.right.cls; }
+  function isChampion(a){ return a.left.cls===a.top.cls && a.left.cls===a.right.cls; }
 
   async function enterArms(arms){
     setSrc(armLeft, arms.left.file); setSrc(armTop, arms.top.file); setSrc(armRight, arms.right.file);
@@ -288,75 +268,57 @@
       armLeft.style.transform='rotate(0deg)'; armTop.style.transform='rotate(0deg)'; armRight.style.transform='rotate(0deg)';
       place(armLeft, layout.left); place(armTop, layout.top); place(armRight, layout.right);
     });
-    await new Promise(r=>setTimeout(r, 1450));
+    await new Promise(r=>setTimeout(r, DUR_IN + 50));
     state = 'armsIn';
   }
 
   async function exitArms(){
-    // rotate while leaving, slower ease-in
     requestAnimationFrame(()=>{
       armLeft.style.transform='rotate(-18deg)'; armTop.style.transform='rotate(-18deg)'; armRight.style.transform='rotate(18deg)';
       place(armLeft, layout.off.left); place(armTop, layout.off.top); place(armRight, layout.off.right);
       armLeft.style.opacity='0'; armTop.style.opacity='0'; armRight.style.opacity='0';
     });
-    await new Promise(r=>setTimeout(r, 800));
-    state = 'armsOut';
-  });
-    await new Promise(r=>setTimeout(r, 420));
+    await new Promise(r=>setTimeout(r, DUR_OUT + 50));
     state = 'armsOut';
   }
 
   function showChampionPerimeter(){ placeFrame(); champFrame.classList.add('visible'); }
 
-  centerCard.addEventListener('click', async ()=>{
-    if(locked) { champFrame.classList.add('pulse'); setTimeout(()=>champFrame.classList.remove('pulse'), 800); return; }
+  // Flip (slow, classic squish)
+  function flipToChampion(){
+    centerCard.classList.remove('clickable');
+    centerCard.style.transition = 'transform 320ms ease-in';
+    centerCard.classList.add('squish');
+    centerCard.addEventListener('transitionend', function onT(e){
+      if(e.propertyName!=='transform') return;
+      centerCard.removeEventListener('transitionend', onT);
+      setSrc(centerCard, 'champion.webp');
+      centerCard.style.transition = 'transform 380ms ease-out';
+      centerCard.classList.remove('squish');
+    });
+  }
 
-    // clickable behavior depends on state
+  centerCard.addEventListener('click', async ()=>{
+    if(locked) { champFrame.classList.add('pulse'); setTimeout(()=>champFrame.classList.remove('pulse'), 1800); return; }
+
     if(state==='idle'){
       centerCard.classList.remove('clickable');
       const arms = pickArms();
       await enterArms(arms);
-      if(isChampion(arms)){
-        showChampionPerimeter();
-        locked = true;
-        // flip after small delay
-        centerCard.style.transition = 'transform 320ms ease-in';
-        centerCard.classList.add('squish');
-        centerCard.addEventListener('transitionend', function onT(e){
-          if(e.propertyName!=='transform') return;
-          centerCard.removeEventListener('transitionend', onT);
-          setSrc(centerCard, 'champion.webp');
-          centerCard.style.transition = 'transform 380ms ease-out';
-          centerCard.classList.remove('squish');
-        });
-      } else {
-        // arms are in; next click should remove them
-        centerCard.classList.add('clickable');
-      }
-    } else if(state==='armsIn'){
+      if(isChampion(arms)) { showChampionPerimeter(); locked=true; flipToChampion(); }
+      else { centerCard.classList.add('clickable'); }
+    }
+    else if(state==='armsIn'){
       centerCard.classList.remove('clickable');
       await exitArms();
-      // arms are out; next click will bring new ones
       centerCard.classList.add('clickable');
-    } else if(state==='armsOut'){
+    }
+    else if(state==='armsOut'){
       centerCard.classList.remove('clickable');
       const arms = pickArms();
       await enterArms(arms);
-      if(isChampion(arms)){
-        showChampionPerimeter();
-        locked = true;
-        centerCard.style.transition = 'transform 320ms ease-in';
-        centerCard.classList.add('squish');
-        centerCard.addEventListener('transitionend', function onT(e){
-          if(e.propertyName!=='transform') return;
-          centerCard.removeEventListener('transitionend', onT);
-          setSrc(centerCard, 'champion.webp');
-          centerCard.style.transition = 'transform 380ms ease-out';
-          centerCard.classList.remove('squish');
-        });
-      } else {
-        centerCard.classList.add('clickable');
-      }
+      if(isChampion(arms)) { showChampionPerimeter(); locked=true; flipToChampion(); }
+      else { centerCard.classList.add('clickable'); }
     }
   });
 
