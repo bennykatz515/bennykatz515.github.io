@@ -37,13 +37,17 @@ html, body {
   header { display: grid; place-items: center; }
   main   { display: grid; place-items: center; }
 footer {
-  position: relative;
-  z-index: 10000;                  /* keep footer above the overlay */
+  position: fixed;           /* fixed so we can place it precisely */
+  left: 0;
+  right: 0;
+  top: 70vh;                 /* temporary; JS will set exact top */
+  z-index: 10000;            /* above the hotzone (9999) */
   display: grid;
   place-items: center;
-  gap: 4px;                        /* space between CTA and © */
+  gap: 4px;
   padding: 8px 8px max(12px, env(safe-area-inset-bottom));
 }
+
 
 
 
@@ -287,6 +291,34 @@ function positionHotzone(){
   hz.style.right = '0';
 }
 
+function positionFooter() {
+  const footer = document.querySelector('footer');
+  if (!footer || !layout) return;
+
+  // measure footer height (ensure it’s rendered)
+  footer.style.visibility = 'hidden';
+  footer.style.top = '0px';
+  footer.style.bottom = '';
+  footer.style.display = 'grid';
+  const footerH = footer.getBoundingClientRect().height || 0;
+  footer.style.visibility = '';
+
+  // body bottom in viewport coords: stage top + body top + card height
+  const stageRect = stage.getBoundingClientRect();
+  const bodyBottom = stageRect.top + layout.body.top + layout.h;
+
+  // place footer 10px below the body, but keep it on-screen
+  const gap = 10;
+  let topPx = Math.round(bodyBottom + gap);
+
+  // clamp: never let footer go off bottom edge
+  const maxTop = Math.max(0, window.innerHeight - footerH);
+  if (topPx > maxTop) topPx = maxTop;
+
+  footer.style.top = topPx + 'px';
+  footer.style.bottom = ''; // we’re anchoring by top
+}
+
 
 /* Keep layout correct on resize/scroll (and move the waitlist hotzone) */
 function relayoutVisible(){
@@ -304,6 +336,8 @@ function relayoutVisible(){
   }
 
   positionHotzone();
+  positionFooter();
+
 }
 
 window.addEventListener('resize', relayoutVisible);
@@ -318,12 +352,12 @@ let pendingArms = null;      // holds the set used for the next "enter" action
 
 /* =======================  INIT  ======================= */
 async function init(){
-computeLayout(); placeCenter(); positionHotzone();
+computeLayout(); placeCenter(); positionHotzone(); positionFooter();
 
   centerCard.onload = () => {
     if (centerCard.naturalWidth) {
       BODY_AR = centerCard.naturalWidth / centerCard.naturalHeight;
-      computeLayout(); placeCenter(); positionHotzone();
+      computeLayout(); placeCenter(); positionHotzone(); positionFooter();
     }
   };
   setSrc(centerCard, 'body.webp');
@@ -335,7 +369,7 @@ computeLayout(); placeCenter(); positionHotzone();
 init();
 
 window.addEventListener('resize', () => {
-  computeLayout(); placeCenter(); positionHotzone();
+  computeLayout(); placeCenter(); positionHotzone(); positionFooter();
   if (state === 'armsIn') { place(armLeft, layout.left); place(armTop, layout.top); place(armRight, layout.right); }
 });
 
