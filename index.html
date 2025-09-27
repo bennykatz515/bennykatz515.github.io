@@ -124,12 +124,20 @@ footer {
   left: 0; right: 0;
   top: var(--hotzone-top);
   bottom: 0;
-  z-index: 9999;                          /* on top of everything */
-  display: block;                         /* ensure it has a box */
-  background: rgba(0, 255, 255, 0.12);    /* visible tint for testing */
-  outline: 2px solid #000;                /* black border for testing */
+  z-index: 9999;
+  display: block;
+  background: transparent;   /* invisible */
+  outline: none;             /* no border */
   text-decoration: none;
+  cursor: pointer;           /* optional: shows it's clickable */
 }
+
+/* keep an outline for keyboard users (optional but good a11y) */
+#waitlistBox:focus-visible {
+  outline: 2px solid rgba(255,255,255,.6);
+  outline-offset: 2px;
+}
+
 
 </style>
 
@@ -167,7 +175,7 @@ footer {
       </div>
     </footer>
 
-    <div style="text-align:center; font-size:0.8rem; opacity:0.75; padding:2px 0;">
+    <div style="text-align:center; font-size:0.8rem; opacity:0.75; padding:7px 0;">
       © 2025 Car World Colosseum
     </div>
   </div>
