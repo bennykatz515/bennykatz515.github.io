@@ -97,7 +97,7 @@ footer {
 .cantClickPulse {
   animation: pulseNoClickRed 1.05s ease-in-out 0s 2; /* 2 quick red pulses */
 }
- { animation: pulseGlow 1.4s ease-in-out infinite; }
+
 
   /* Arms (slow entrances/exits) */
   :root { --arm-in-ms: 3000ms; --arm-out-ms: 1200ms; }
@@ -139,7 +139,7 @@ footer {
       </div>
 </main>
 
-<!-- Transparent clickbox linking to the waitlist -->
+<!-- Visible overlay clickbox linking to the waitlist (for testing) -->
 <a id="waitlistBox"
    href="https://forms.gle/hJcNRWekxT2RLGMHA"
    target="_blank" rel="noopener"
@@ -387,17 +387,16 @@ document.addEventListener('contextmenu', (e) => {
 </body>
 </html>
 
-/* ===== Waitlist clickbox (transparent with black outline) ===== */
-:root { --hotzone-top: 62vh; }  /* tweak this to move the box up/down */
+/* ===== Visible overlay clickbox for testing ===== */
+:root { --hotzone-top: 62vh; } /* tweak this to position the box */
 
 #waitlistBox {
   position: fixed;
   left: 0; right: 0;
   top: var(--hotzone-top);
   bottom: 0;
-  z-index: 20;
-  outline: 1px solid #000;      /* visible border; remove later if you want */
-  background: transparent;      /* transparent hit area */
+  z-index: 9999;                 /* sit above everything */
+  background: rgba(0, 255, 255, 0.08); /* TEAL TINT so you can see it (remove later) */
+  outline: 2px solid #000;       /* visible border for testing (remove later) */
   text-decoration: none;
 }
-
