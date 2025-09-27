@@ -6,9 +6,8 @@
 <link rel="icon" href="/favicon.png" />
 <link rel="preload" href="blackbeardregular-webfont.woff2" as="font" type="font/woff2" crossorigin>
 
-
 <style>
-/* BlackBeard font */
+/* BlackBeard font + page fade-in curtain */
 @font-face{
   font-family: "BlackBeard";
   src: url("blackbeardregular-webfont.woff2") format("woff2"); /* adjust path if in /fonts */
@@ -16,6 +15,7 @@
   font-style: normal;
   font-display: swap;
 }
+
 html, body {
   height: 100%;
   margin: 0;
@@ -23,29 +23,44 @@ html, body {
   overflow: hidden;          /* ← disables scrolling */
 }
 
+/* --- page fade-in curtain --- */
+#curtain{
+  position: fixed;
+  inset: 0;
+  background: #000;               /* start fully black */
+  z-index: 2147483646;            /* just below #waitlistBox (…47) */
+  opacity: 1;
+  transition: opacity 0.5s ease;  /* 0.5s fade */
+}
 
-  body {
-    font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, sans-serif;
-    color: #fff;
-    background: #000;
-    overscroll-behavior: none;
-    touch-action: manipulation;
-    user-select: none;
-    padding-bottom: max(20px, env(safe-area-inset-bottom));
-  }
+/* when ready, fade away (add .ready to <body> in JS) */
+body.ready #curtain{
+  opacity: 0;
+  pointer-events: none;           /* stop blocking clicks after fade */
+}
 
-  /* Red backdrop */
-  .bg {
-    position: fixed; inset: 0; z-index: -1;
-    background-color: #7b0000;
-    background-position: center; background-repeat: no-repeat; background-size: cover;
-    background-image: url('RedBackdrop.webp?v=2');
-  }
+body {
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, sans-serif;
+  color: #fff;
+  background: #000;
+  overscroll-behavior: none;
+  touch-action: manipulation;
+  user-select: none;
+  padding-bottom: max(20px, env(safe-area-inset-bottom));
+}
 
-  /* Page layout */
-  .wrap { min-height: 100svh; display: grid; grid-template-rows: auto 1fr auto; gap: 8px; padding: 6px 8px; }
-  header { display: grid; place-items: center; }
-  main   { display: grid; place-items: center; }
+/* Red backdrop */
+.bg {
+  position: fixed; inset: 0; z-index: -1;
+  background-color: #7b0000;
+  background-position: center; background-repeat: no-repeat; background-size: cover;
+  background-image: url('RedBackdrop.webp?v=2');
+}
+
+/* Page layout */
+.wrap { min-height: 100svh; display: grid; grid-template-rows: auto 1fr auto; gap: 8px; padding: 6px 8px; }
+header { display: grid; place-items: center; }
+main   { display: grid; place-items: center; }
 footer {
   position: fixed;           /* fixed so we can place it precisely */
   left: 0;
@@ -58,12 +73,8 @@ footer {
   padding: 8px 8px max(12px, env(safe-area-inset-bottom));
 }
 
-
-
-
-
-  /* logo controls */
-  .logo {
+/* logo controls */
+.logo {
   width: min(54vw, 320px);   /* keep your current logical size */
   height: auto;
   display: block;
@@ -77,18 +88,16 @@ footer {
   will-change: transform;
 }
 
+/* ↓ make stage a bit shorter so cards sit closer to both logo & footer */
+.stage { position: relative; width: min(92vw, 480px); height: min(66svh, 560px);
+         margin: 0 auto; display:grid; place-items:center; }
 
-  /* ↓ make stage a bit shorter so cards sit closer to both logo & footer */
-  .stage { position: relative; width: min(92vw, 480px); height: min(66svh, 560px);
-           margin: 0 auto; display:grid; place-items:center; }
+.cardArea { position: absolute; inset: 0; }
+.card     { position:absolute; image-rendering:auto; filter: drop-shadow(0 6px 16px rgba(0,0,0,.45)); }
 
-  .cardArea { position: absolute; inset: 0; }
-  .card     { position:absolute; image-rendering:auto; filter: drop-shadow(0 6px 16px rgba(0,0,0,.45)); }
-
-  /* Body (center card) */
-  .centerCard { cursor:pointer; transition: transform 320ms ease-in, filter 300ms ease-in-out; }
-  .centerCard.squish { transform-origin:center; transform: scaleX(0.02); }
-
+/* Body (center card) */
+.centerCard { cursor:pointer; transition: transform 320ms ease-in, filter 300ms ease-in-out; }
+.centerCard.squish { transform-origin:center; transform: scaleX(0.02); }
 
 /* yellow "ready" pulse (unchanged) */
 @keyframes pulseGlow {
@@ -108,20 +117,19 @@ footer {
   animation: pulseNoClickRed 1.05s ease-in-out 0s 2; /* 2 quick red pulses */
 }
 
+/* Arms (slow entrances/exits) */
+:root { --arm-in-ms: 3000ms; --arm-out-ms: 1200ms; }
+.arm {
+  opacity:0; pointer-events:none;
+  transition:
+    left var(--arm-in-ms) cubic-bezier(.16,1,.3,1),
+    top  var(--arm-in-ms) cubic-bezier(.16,1,.3,1),
+    transform var(--arm-in-ms) cubic-bezier(.16,1,.3,1),
+    opacity 500ms ease-out;
+}
 
-  /* Arms (slow entrances/exits) */
-  :root { --arm-in-ms: 3000ms; --arm-out-ms: 1200ms; }
-  .arm {
-    opacity:0; pointer-events:none;
-    transition:
-      left var(--arm-in-ms) cubic-bezier(.16,1,.3,1),
-      top  var(--arm-in-ms) cubic-bezier(.16,1,.3,1),
-      transform var(--arm-in-ms) cubic-bezier(.16,1,.3,1),
-      opacity 500ms ease-out;
-  }
-
-  /* Champion perimeter frame — hidden per request */
-  .champFrame { display:none !important; }
+/* Champion perimeter frame — hidden per request */
+.champFrame { display:none !important; }
 
 /* CTA text */
 .cta { 
@@ -132,7 +140,6 @@ footer {
   text-shadow: 0 2px 8px rgba(0,0,0,.6);
   line-height: 1.2;
 }
-
 
 /* colored words */
 .cta .blue { color: #4DA3FF; }     /* WAITLIST */
@@ -159,11 +166,9 @@ footer {
   opacity: 0.75;
 }
 
-  img { -webkit-user-drag: none; user-drag: none; }
+img { -webkit-user-drag: none; user-drag: none; }
 
 /* ===== Visible overlay clickbox for testing ===== */
-
-
 #waitlistBox{
   position: fixed;
   left: 0; right: 0;
@@ -182,17 +187,16 @@ footer {
   background: rgba(0,255,255,.18) !important;
   outline: 1px dashed #00ced1;
 }
-
-
 </style>
 
 <body>
+  <!-- Curtain must be first so it covers everything -->
   <div id="curtain" aria-hidden="true"></div>
-  <div class="bg" aria-hidden="true"></div>
-  <!-- the rest of your markup ... -->
 
+  <!-- Single background -->
   <div class="bg" aria-hidden="true"></div>
 
+  <!-- Single wrapper -->
   <div class="wrap">
     <header>
       <img class="logo" src="logo.webp" alt="Car World Colosseum" width="900" height="522" />
@@ -208,25 +212,22 @@ footer {
           <div id="champFrame" class="champFrame" aria-hidden="true"></div>
         </div>
       </div>
-</main>
+    </main>
 
-<!-- Visible overlay clickbox linking to the waitlist (for testing) -->
-<a id="waitlistBox"
-   href="https://forms.gle/hJcNRWekxT2RLGMHA"
-   target="_blank" rel="noopener"
-   aria-label="Join the waiting list"></a>
+    <!-- Visible overlay clickbox linking to the waitlist (for testing) -->
+    <a id="waitlistBox"
+       href="https://forms.gle/hJcNRWekxT2RLGMHA"
+       target="_blank" rel="noopener"
+       aria-label="Join the waiting list"></a>
 
-<footer>
-  <div class="cta" role="text">
-    <span class="line">JOIN THE <span class="blue">WAITLIST</span></span>
-    <span class="line">FOR A CHANCE TO WIN</span>
-    <span class="line">A <span class="gold">GOLDEN ATTENDANT</span></span>
-  </div>
-  <div class="copyright">© 2025 Car World Colosseum</div>
-</footer>
-
-
-
+    <footer>
+      <div class="cta" role="text">
+        <span class="line">JOIN THE <span class="blue">WAITLIST</span></span>
+        <span class="line">FOR A CHANCE TO WIN</span>
+        <span class="line">A <span class="gold">GOLDEN ATTENDANT</span></span>
+      </div>
+      <div class="copyright">© 2025 Car World Colosseum</div>
+    </footer>
   </div>
 
 <script>
@@ -323,9 +324,6 @@ function positionHotzone(){
   hz.style.display = 'block';
 }
 
-
-
-
 function positionFooter() {
   const footer = document.querySelector('footer');
   if (!footer || !layout) return;
@@ -354,7 +352,6 @@ function positionFooter() {
   footer.style.bottom = ''; // we’re anchoring by top
 }
 
-
 /* Keep layout correct on resize/scroll (and move the waitlist hotzone) */
 function relayoutVisible(){
   computeLayout();
@@ -377,7 +374,6 @@ function relayoutVisible(){
 
 window.addEventListener('resize', relayoutVisible);
 window.addEventListener('scroll',  relayoutVisible, { passive: true });
-
 
 /* =======================  STATE  ======================= */
 let state = 'boot';          // 'idle' (no arms), 'armsIn' (visible), 'armsOut' (hidden)
@@ -402,7 +398,17 @@ async function init(){
   state = 'idle';
 
   // ↓ start the fade-out AFTER everything's ready
-  requestAnimationFrame(() => document.body.classList.add('ready'));
+  requestAnimationFrame(() => {
+    document.body.classList.add('ready');
+
+    // remove the curtain after the fade completes
+    const curtain = document.getElementById('curtain');
+    if (curtain) {
+      curtain.addEventListener('transitionend', () => curtain.remove(), { once: true });
+      // fallback in case transitionend doesn't fire
+      setTimeout(() => curtain && curtain.remove(), 1200);
+    }
+  });
 }
 
 init();
@@ -510,7 +516,6 @@ centerCard.addEventListener('click', async () => {
 
   busy = false;
 });
-
 
 /* Deter saving from the stage/logo/bg */
 document.addEventListener('contextmenu', (e) => {
