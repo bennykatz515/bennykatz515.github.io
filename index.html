@@ -124,34 +124,34 @@ footer {
 
   img { -webkit-user-drag: none; user-drag: none; }
 
-/* ===== Visible overlay clickbox for testing ===== */
 
+/* ===== Visible overlay clickbox for testing ===== */
 #waitlistBox {
   position: fixed;
-  left: 0; right: 0;
-  top: var(--hotzone-top);
-  bottom: 0;
+  left: 0;
+  right: 0;
   z-index: 9999;
-  display: block;
+  display: block;                 /* never suppressed by default */
 
-  /* invisible */
-  background: transparent !important;
-  border: 0 !important;
-  outline: none !important;
-  text-decoration: none;
+  /* VISIBLE for testing */
+  background: rgba(0, 255, 255, 0.18);
+  outline: 2px solid #00ffff;
 
-  /* mobile: remove tap flash / focus ring */
+  /* tap/selection niceties */
   -webkit-tap-highlight-color: transparent;
   -webkit-touch-callout: none;
   touch-action: manipulation;
+  text-decoration: none;
+  border: 0;
+  outline-offset: 0;
 }
+/* (Optional) keep focus clean without hiding the box */
 #waitlistBox:focus,
 #waitlistBox:active,
 #waitlistBox:focus-visible {
-  outline: none !important;
   box-shadow: none !important;
-  background: transparent !important;
 }
+
 
 
 </style>
@@ -274,32 +274,28 @@ function positionHotzone(){
   const hz = document.getElementById('waitlistBox');
   if (!hz || !layout) return;
 
-  const stageRect  = stage.getBoundingClientRect();
-  const footer     = document.querySelector('footer');
+  const footer = document.querySelector('footer');
   const footerRect = footer ? footer.getBoundingClientRect() : null;
-  const footerH    = footerRect ? Math.max(0, footerRect.height) : 0;
 
-  // Body’s bottom in viewport coords
+  // Body bottom in viewport coords
+  const stageRect  = stage.getBoundingClientRect();
   const bodyBottom = stageRect.top + layout.body.top + layout.h;
 
   // Start a few pixels below the body
-  const offset = 6;
-  const topPx  = Math.max(0, Math.round(bodyBottom + offset));
+  const offset   = 6;
+  const topPx    = Math.max(0, Math.round(bodyBottom + offset));
 
-  // End exactly at the top edge of the fixed footer
-  const bottomPx = Math.min(window.innerHeight, footerRect ? (window.innerHeight - footerRect.top) : footerH);
+  // Reserve space for the fixed footer so the box doesn't sit under it
+  const bottomPx = footerRect ? Math.max(0, window.innerHeight - Math.max(footerRect.top, 0)) : 0;
 
-  // If no vertical room remains, hide the hotzone; else show it
-  if (topPx >= window.innerHeight - bottomPx) {
-    hz.style.display = 'none';
-  } else {
-    hz.style.display = 'block';
-    hz.style.top = topPx + 'px';
-    hz.style.left = '0';
-    hz.style.right = '0';
-    hz.style.bottom = Math.max(0, bottomPx) + 'px';
-  }
+  // Always show (no suppression)
+  hz.style.display = 'block';
+  hz.style.top     = topPx + 'px';
+  hz.style.left    = '0';
+  hz.style.right   = '0';
+  hz.style.bottom  = bottomPx + 'px';
 }
+
 
 
 
