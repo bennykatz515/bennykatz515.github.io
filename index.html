@@ -126,10 +126,24 @@ footer {
   bottom: 0;
   z-index: 9999;
   display: block;
-  background: transparent;   /* invisible */
-  outline: none;             /* no border */
+
+  /* invisible */
+  background: transparent !important;
+  border: 0 !important;
+  outline: none !important;
   text-decoration: none;
-  cursor: pointer;           /* optional: shows it's clickable */
+
+  /* mobile: remove tap flash / focus ring */
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
+}
+#waitlistBox:focus,
+#waitlistBox:active,
+#waitlistBox:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
 }
 
 
