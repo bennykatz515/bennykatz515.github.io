@@ -272,42 +272,24 @@ function positionHotzone(){
   if (!hz || !layout || !footer) return;
 
   const footerRect = footer.getBoundingClientRect();
-  const footerTop  = footerRect.top;
-
   const stageRect  = stage.getBoundingClientRect();
+
+  // body bottom in viewport coords
   const bodyBottom = stageRect.top + layout.body.top + layout.h;
-  const offset     = 6;
+  const offset = 6;
+  let topPx  = Math.max(0, Math.round(bodyBottom + offset));
 
-  const isNarrow = window.innerWidth <= 540; // treat as mobile
+  // space we reserve at the bottom = footer height (because footer is fixed)
+  const bottomPx = Math.max(0, Math.min(window.innerHeight, window.innerHeight - footerRect.top));
 
-  if (isNarrow) {
-    // Mobile: box below body, ending at footer
-    let topPx = Math.round(bodyBottom + offset);
-    let bottomPx = Math.max(0, window.innerHeight - footerTop);
-
-    // enforce a minimum box height
-    const minHeight = 48;
-    let avail = window.innerHeight - bottomPx - topPx;
-    if (avail < minHeight) {
-      topPx = Math.max(0, window.innerHeight - bottomPx - minHeight);
-    }
-
-    hz.style.display = 'block';
-    hz.style.top = topPx + 'px';
-    hz.style.left = '0';
-    hz.style.right = '0';
-    hz.style.bottom = bottomPx + 'px';
-  } else {
-    // Desktop: hug bottom — fixed strip above footer
-    const stripHeight = 64; // adjust height of clickable strip
-    hz.style.display = 'block';
-    hz.style.left = '0';
-    hz.style.right = '0';
-    hz.style.top = (footerTop - stripHeight) + 'px';
-    hz.style.bottom = '0';
+  // ensure a minimum click height so it doesn't vanish on desktop
+  const minHeight = 48;
+  let avail = window.innerHeight - bottomPx - topPx;
+  if (avail < minHeight) {
+    // pull the top up to make room, but never above 0
+    topPx = Math.max(0, window.innerHeight - bottomPx - minHeight);
+    avail = window.innerHeight - bottomPx - topPx;
   }
-}
-
 
   if (avail <= 0) {
     hz.style.display = 'none';
