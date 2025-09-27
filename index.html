@@ -137,6 +137,9 @@ img { -webkit-user-drag: none; user-drag: none; }
   -webkit-tap-highlight-color: transparent;
   -webkit-touch-callout: none;
   touch-action: manipulation;
+/* TEST ONLY */
+background: rgba(0,255,255,.12) !important; outline: 2px solid #000; 
+
 }
 #waitlistBox:focus,
 #waitlistBox:active,
@@ -267,24 +270,39 @@ function positionHotzone(){
   const hz = document.getElementById('waitlistBox');
   const footer = document.querySelector('footer');
   if (!hz || !layout || !footer) return;
-  updateFooterPadding();
+
   const footerRect = footer.getBoundingClientRect();
-  const footerH    = Math.max(0, footerRect.height);
   const stageRect  = stage.getBoundingClientRect();
+
+  // body bottom in viewport coords
   const bodyBottom = stageRect.top + layout.body.top + layout.h;
   const offset = 6;
-  const topPx  = Math.max(0, Math.round(bodyBottom + offset));
-  const bottomPx = Math.min(window.innerHeight, window.innerHeight - footerRect.top);
-  if (topPx >= window.innerHeight - bottomPx) {
-    hz.style.display = 'none';
-  } else {
-    hz.style.display = 'block';
-    hz.style.top = topPx + 'px';
-    hz.style.left = '0';
-    hz.style.right = '0';
-    hz.style.bottom = Math.max(0, bottomPx) + 'px';
+  let topPx  = Math.max(0, Math.round(bodyBottom + offset));
+
+  // space we reserve at the bottom = footer height (because footer is fixed)
+  const bottomPx = Math.max(0, Math.min(window.innerHeight, window.innerHeight - footerRect.top));
+
+  // ensure a minimum click height so it doesn't vanish on desktop
+  const minHeight = 48;
+  let avail = window.innerHeight - bottomPx - topPx;
+  if (avail < minHeight) {
+    // pull the top up to make room, but never above 0
+    topPx = Math.max(0, window.innerHeight - bottomPx - minHeight);
+    avail = window.innerHeight - bottomPx - topPx;
   }
+
+  if (avail <= 0) {
+    hz.style.display = 'none';
+    return;
+  }
+
+  hz.style.display = 'block';
+  hz.style.top = topPx + 'px';
+  hz.style.left = '0';
+  hz.style.right = '0';
+  hz.style.bottom = Math.max(0, bottomPx) + 'px';
 }
+
 
 function relayoutVisible(){
   computeLayout();
