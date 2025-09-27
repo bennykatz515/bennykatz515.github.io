@@ -113,8 +113,33 @@ footer {
   /* Champion perimeter frame — hidden per request */
   .champFrame { display:none !important; }
 
-  .cta { text-align:center; font-weight:700; letter-spacing:.02em; text-shadow:0 2px 8px rgba(0,0,0,.6); }
-  .cta .small { opacity:.85; font-weight:600; }
+.cta { 
+  text-align: center;
+  font-weight: 700;
+  letter-spacing: .02em;
+  text-shadow: 0 2px 8px rgba(0,0,0,.6);
+  line-height: 1.2;
+}
+
+/* colored words */
+.cta .blue { color: #4DA3FF; }     /* WAITLIST */
+.cta .gold { color: #FFD166; }     /* GOLDEN ATTENDANT */
+
+/* default: stack to 3 lines on mobile */
+.cta .line { display: block; }
+
+/* desktop and wider: collapse to one row */
+@media (min-width: 700px){
+  .cta {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: nowrap;
+    gap: .4ch;                     /* small spacing between segments */
+  }
+  .cta .line { display: inline; }
+}
+
 .copyright {
   text-align: center;
   font-size: 0.8rem;
@@ -175,12 +200,15 @@ footer {
    aria-label="Join the waiting list"></a>
 
 <footer>
-  <div class="cta">
-    <div class="small">JOIN THE WAITING LIST</div>
-    <div>FOR A CHANCE TO WIN A GOLDEN ATTENDANT</div>
+  <div class="cta" role="text">
+    <span class="line">JOIN THE <span class="blue">WAITLIST</span></span>
+    <span class="line">FOR A CHANCE TO WIN</span>
+    <span class="line">A <span class="gold">GOLDEN ATTENDANT</span></span>
   </div>
   <div class="copyright">© 2025 Car World Colosseum</div>
 </footer>
+
+
 
   </div>
 
