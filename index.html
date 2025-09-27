@@ -117,6 +117,22 @@ footer {
   .cta .small { opacity:.85; font-weight:600; }
 
   img { -webkit-user-drag: none; user-drag: none; }
+
+/* ===== Visible overlay clickbox for testing ===== */
+:root { --hotzone-top: 62vh; } /* tweak this to position the box */
+
+#waitlistBox {
+  position: fixed;
+  left: 0; right: 0;
+  top: var(--hotzone-top);
+  bottom: 0;
+  z-index: 9999;                          /* on top of everything */
+  display: block;                         /* ensure it has a box */
+  background: rgba(0, 255, 255, 0.12);    /* visible tint for testing */
+  outline: 2px solid #000;                /* black border for testing */
+  text-decoration: none;
+}
+
 </style>
 
 <body>
@@ -386,17 +402,3 @@ document.addEventListener('contextmenu', (e) => {
 </script>
 </body>
 </html>
-
-/* ===== Visible overlay clickbox for testing ===== */
-:root { --hotzone-top: 62vh; } /* tweak this to position the box */
-
-#waitlistBox {
-  position: fixed;
-  left: 0; right: 0;
-  top: var(--hotzone-top);
-  bottom: 0;
-  z-index: 9999;                 /* sit above everything */
-  background: rgba(0, 255, 255, 0.08); /* TEAL TINT so you can see it (remove later) */
-  outline: 2px solid #000;       /* visible border for testing (remove later) */
-  text-decoration: none;
-}
