@@ -187,6 +187,10 @@ footer {
 </style>
 
 <body>
+  <div id="curtain" aria-hidden="true"></div>
+  <div class="bg" aria-hidden="true"></div>
+  <!-- the rest of your markup ... -->
+
   <div class="bg" aria-hidden="true"></div>
 
   <div class="wrap">
@@ -383,7 +387,7 @@ let pendingArms = null;      // holds the set used for the next "enter" action
 
 /* =======================  INIT  ======================= */
 async function init(){
-computeLayout(); placeCenter(); positionHotzone(); positionFooter();
+  computeLayout(); placeCenter(); positionHotzone(); positionFooter();
 
   centerCard.onload = () => {
     if (centerCard.naturalWidth) {
@@ -393,10 +397,14 @@ computeLayout(); placeCenter(); positionHotzone(); positionFooter();
   };
   setSrc(centerCard, 'body.webp');
 
-  await prewarm();
+  await prewarm();                     // images/fonts warmed
   centerCard.classList.add('clickable');
   state = 'idle';
+
+  // ↓ start the fade-out AFTER everything's ready
+  requestAnimationFrame(() => document.body.classList.add('ready'));
 }
+
 init();
 
 window.addEventListener('resize', () => {
