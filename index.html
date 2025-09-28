@@ -143,21 +143,27 @@ footer {
   animation: pulseNoClickRed 1.05s ease-in-out 0s 2; /* 2 quick red pulses */
 }
 
-/* Arms (slow entrances/exits) */
+/* Arms (slightly smoother final approach) */
 :root { --arm-in-ms: 2800ms; --arm-out-ms: 1200ms; }
 
 .arm {
   opacity: 0;
   pointer-events: none;
-  /* helps the last pixels feel buttery */
+
+  /* keep the GPU engaged and allow sub-pixel interpolation */
   will-change: left, top, transform;
-  transform: translateZ(0);
-  transition:
-    left      var(--arm-in-ms) cubic-bezier(.22,1,.36,1),
-    top       var(--arm-in-ms) cubic-bezier(.22,1,.36,1),
-    transform var(--arm-in-ms) cubic-bezier(.22,1,.36,1),
-    opacity   450ms ease-out;
+  transform: translateZ(0.001px);
+
+  /* slightly less “sticky” ease-out at the end */
+  transition-property: left, top, transform, opacity;
+  transition-duration: var(--arm-in-ms), var(--arm-in-ms), var(--arm-in-ms), 450ms;
+  transition-timing-function:
+    cubic-bezier(.25,.92,.35,1),
+    cubic-bezier(.25,.92,.35,1),
+    cubic-bezier(.25,.92,.35,1),
+    ease-out;
 }
+
 
 
 /* Champion perimeter frame — hidden per request */
@@ -501,7 +507,7 @@ async function enterArms(arms){
     place(armLeft, layout.left); place(armTop, layout.top); place(armRight, layout.right);
   });
 
-  await new Promise(r => setTimeout(r, 2800 + 80));
+  await new Promise(r => setTimeout(r, 2800 + 20));
   state = 'armsIn';
 }
 
