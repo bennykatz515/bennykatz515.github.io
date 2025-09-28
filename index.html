@@ -493,35 +493,81 @@ function pickArms(){
 function isChampion(a){ return a.left.cls === a.top.cls && a.left.cls === a.right.cls; }
 
 async function enterArms(arms){
+  // set sources
   setSrc(armLeft,  arms.left.file);
   setSrc(armTop,   arms.top.file);
   setSrc(armRight, arms.right.file);
 
-  place(armLeft,  layout.off.left);
-  place(armTop,   layout.off.top);
-  place(armRight, layout.off.right);
+  // compute deltas from OFF → TARGET
+  const dLx = layout.off.left.left  - layout.left.left;
+  const dLy = layout.off.left.top   - layout.left.top;
+  const dTx = layout.off.top.left   - layout.top.left;
+  const dTy = layout.off.top.top    - layout.top.top;
+  const dRx = layout.off.right.left - layout.right.left;
+  const dRy = layout.off.right.top  - layout.right.top;
 
+  // pin each arm at its final left/top box so only transform animates
+  place(armLeft,  layout.left);
+  place(armTop,   layout.top);
+  place(armRight, layout.right);
+
+  // start translated from the off-screen delta
+  armLeft.style.opacity = '0';
+  armTop.style.opacity  = '0';
+  armRight.style.opacity= '0';
+
+  armLeft.style.transform  = `translate(${dLx}px, ${dLy}px)`;
+  armTop.style.transform   = `translate(${dTx}px, ${dTy}px)`;
+  armRight.style.transform = `translate(${dRx}px, ${dRy}px)`;
+
+  // next frame: glide to zero-translate (final) — smooth to the last pixel
   requestAnimationFrame(() => {
-    armLeft.style.opacity='1'; armTop.style.opacity='1'; armRight.style.opacity='1';
-    armLeft.style.transform='rotate(0deg)'; armTop.style.transform='rotate(0deg)'; armRight.style.transform='rotate(0deg)';
-    place(armLeft, layout.left); place(armTop, layout.top); place(armRight, layout.right);
+    armLeft.style.opacity = '1';
+    armTop.style.opacity  = '1';
+    armRight.style.opacity= '1';
+
+    armLeft.style.transform  = 'translate(0, 0)';
+    armTop.style.transform   = 'translate(0, 0)';
+    armRight.style.transform = 'translate(0, 0)';
   });
 
-  await new Promise(r => setTimeout(r, 2800 + 20));
+  await new Promise(r => setTimeout(r, 2800 + 20)); // matches --arm-in-ms
   state = 'armsIn';
 }
 
 async function exitArms(){
+  // compute deltas from TARGET → OFF (reverse of enter)
+  const dLx = layout.off.left.left  - layout.left.left;
+  const dLy = layout.off.left.top   - layout.left.top;
+  const dTx = layout.off.top.left   - layout.top.left;
+  const dTy = layout.off.top.top    - layout.top.top;
+  const dRx = layout.off.right.left - layout.right.left;
+  const dRy = layout.off.right.top  - layout.right.top;
+
+  // ensure we’re starting at rest at the target box
+  place(armLeft,  layout.left);
+  place(armTop,   layout.top);
+  place(armRight, layout.right);
+
+  // animate out purely via transform (plus a touch of rotation like before)
   requestAnimationFrame(() => {
-    armLeft.style.transform='rotate(-18deg)'; armTop.style.transform='rotate(-18deg)'; armRight.style.transform='rotate(18deg)';
-    place(armLeft, layout.off.left);
-    place(armTop,  layout.off.top);
-    place(armRight,layout.off.right);
-    armLeft.style.opacity='0'; armTop.style.opacity='0'; armRight.style.opacity='0';
+    armLeft.style.transform  = `translate(${dLx}px, ${dLy}px) rotate(-18deg)`;
+    armTop.style.transform   = `translate(${dTx}px, ${dTy}px) rotate(-18deg)`;
+    armRight.style.transform = `translate(${dRx}px, ${dRy}px) rotate(18deg)`;
+    armLeft.style.opacity = '0';
+    armTop.style.opacity  = '0';
+    armRight.style.opacity= '0';
   });
-  await new Promise(r => setTimeout(r, 1200 + 60));
+
+  await new Promise(r => setTimeout(r, 1200 + 60)); // matches --arm-out-ms
   state = 'armsOut';
+
+  // park them at the off boxes (keeps layout consistent if resized mid-fade)
+  place(armLeft,  layout.off.left);
+  place(armTop,   layout.off.top);
+  place(armRight, layout.off.right);
 }
+
 
 /* =======================  INTERACTION  ======================= */
 function pulseCantClick() {
