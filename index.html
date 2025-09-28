@@ -482,7 +482,7 @@ armRight.style.transform = 'translate(0,0)';
     if (curtain) {
       curtain.addEventListener('transitionend', () => curtain.remove(), { once: true });
       // fallback in case transitionend doesn't fire
-      setTimeout(() => curtain && curtain.remove(), 1200);
+      setTimeout(() => curtain && curtain.remove(), 2500);
     }
   });
 }
@@ -553,7 +553,7 @@ async function enterArms(arms){
     });
   });
 
-  await new Promise(r => setTimeout(r, 2800 + 20)); // matches --arm-in-ms
+  await new Promise(r => setTimeout(r, 2800 + 0)); // matches --arm-in-ms
   state = 'armsIn';
 }
 
