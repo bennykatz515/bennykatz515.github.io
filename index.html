@@ -64,7 +64,7 @@ body {
 }
 
 /* Page layout */
-.wrap { min-height: 100dvh; display: grid; grid-template-rows: auto 1fr auto; gap: 8px; padding: 6px 8px; }
+.wrap { min-height: 100vh; display: grid; grid-template-rows: auto 1fr auto; gap: 8px; padding: 6px 8px; }
 header { display: grid; place-items: center; }
 main   { display: grid; place-items: center; }
 footer {
@@ -95,17 +95,19 @@ footer {
 }
 
 /* ↓ make stage a bit shorter so cards sit closer to both logo & footer */
-.stage { position: relative; width: min(92vw, 480px); height: min(66dvh, 560px);
+.stage { position: relative; width: min(92vw, 480px); height: min(66vh, 560px);
          margin: 0 auto; display:grid; place-items:center; }
 
-/* ===== dvh fallback patch (added) ===== */
-.wrap  { min-height: 100svh; }              /* fallback for older iOS */
-.stage { height: min(66svh, 560px); }       /* fallback for older iOS */
-@supports (height: 1dvh) {
-  .wrap  { min-height: 100dvh; }            /* keep dvh on capable browsers */
-  .stage { height: min(66dvh, 560px); }     /* keep dvh on capable browsers */
+/* ===== progressive viewport units ===== */
+@supports (height: 1svh) {
+  .wrap  { min-height: 100svh; }
+  .stage { height: min(66svh, 560px); }
 }
-/* ===== end patch ===== */
+@supports (height: 1dvh) {
+  .wrap  { min-height: 100dvh; }
+  .stage { height: min(66dvh, 560px); }
+}
+/* ===== end progressive units ===== */
 
 .cardArea { position: absolute; inset: 0; }
 .card     { position:absolute; image-rendering:auto; filter: drop-shadow(0 6px 16px rgba(0,0,0,.45)); }
