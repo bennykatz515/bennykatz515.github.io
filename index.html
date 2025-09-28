@@ -94,6 +94,15 @@ footer {
 .stage { position: relative; width: min(92vw, 480px); height: min(66dvh, 560px);
          margin: 0 auto; display:grid; place-items:center; }
 
+/* ===== dvh fallback patch (added) ===== */
+.wrap  { min-height: 100svh; }              /* fallback for older iOS */
+.stage { height: min(66svh, 560px); }       /* fallback for older iOS */
+@supports (height: 1dvh) {
+  .wrap  { min-height: 100dvh; }            /* keep dvh on capable browsers */
+  .stage { height: min(66dvh, 560px); }     /* keep dvh on capable browsers */
+}
+/* ===== end patch ===== */
+
 .cardArea { position: absolute; inset: 0; }
 .card     { position:absolute; image-rendering:auto; filter: drop-shadow(0 6px 16px rgba(0,0,0,.45)); }
 
@@ -199,8 +208,9 @@ img { -webkit-user-drag: none; user-drag: none; }
 }
 
 /* TEMP iOS test: disable the big overlay entirely */
-#waitlistBox { display: none !important; }
+/#waitlistBox { display: none !important; }/
 </style>
+</head>
 
 <body>
   <!-- Curtain must be first so it covers everything -->
@@ -330,7 +340,11 @@ function positionHotzone(){
 
   const topPx = Math.max(0, Math.round(bodyBottom + 1)); // 1px gap
 
-  hz.style.top = topPx + 'px';
+  // ===== overlay guard patch (added) =====
+  const minTop = Math.round(bodyBottom - layout.h * 0.2); // never jump above near-body area
+  hz.style.top = Math.max(topPx, minTop) + 'px';
+  // ===== end patch =====
+
   hz.style.bottom = '0';
   hz.style.left = '0';
   hz.style.right = '0';
