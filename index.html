@@ -113,8 +113,7 @@ footer {
 .card     { position:absolute; image-rendering:auto; filter: drop-shadow(0 6px 16px rgba(0,0,0,.45)); }
 
 /* Body (center card) */
-/* CHANGED: slower, smoother transform easing */
-.centerCard { cursor:pointer; transition: transform 520ms cubic-bezier(.22,1,.36,1), filter 300ms ease-in-out; }
+.centerCard { cursor:pointer; transition: transform 320ms ease-in, filter 300ms ease-in-out; }
 .centerCard.squish { transform-origin:center; transform: scaleX(0.02); }
 
 /* yellow "ready" pulse (unchanged) */
@@ -136,18 +135,14 @@ footer {
 }
 
 /* Arms (slow entrances/exits) */
-/* CHANGED: timings + easing + GPU hints */
-:root { --arm-in-ms: 3600ms; --arm-out-ms: 1400ms; }
+:root { --arm-in-ms: 3000ms; --arm-out-ms: 1200ms; }
 .arm {
   opacity:0; pointer-events:none;
   transition:
-    left var(--arm-in-ms) cubic-bezier(.22,1,.36,1),
-    top  var(--arm-in-ms) cubic-bezier(.22,1,.36,1),
-    transform var(--arm-in-ms) cubic-bezier(.22,1,.36,1),
+    left var(--arm-in-ms) cubic-bezier(.16,1,.3,1),
+    top  var(--arm-in-ms) cubic-bezier(.16,1,.3,1),
+    transform var(--arm-in-ms) cubic-bezier(.16,1,.3,1),
     opacity 500ms ease-out;
-  backface-visibility: hidden;
-  will-change: left, top, transform;
-  transform: translateZ(0);
 }
 
 /* Champion perimeter frame — hidden per request */
@@ -228,6 +223,23 @@ img { -webkit-user-drag: none; user-drag: none; }
 
 /* TEMP iOS test: disable the big overlay entirely */
 /#waitlistBox { display: none !important; }/
+
+/* ==== BRIGHTNESS DEBUG MODE ==== */
+body.debug .clickable { animation: none !important; }          /* kill glow */
+body.debug .card      { filter: none !important; }             /* kill drop-shadows */
+body.debug .arm       { transition: none !important; 
+                        transform: none !important; 
+                        opacity: 1 !important; }               /* freeze arms */
+body.debug #curtain   { display: none !important; }            /* no curtain fade */
+body.debug .stage     { outline: 1px dashed lime; }            /* visual cue */
+<script>
+/* Toggle with the "b" key to compare brightness with/without effects */
+document.addEventListener('keydown', (e) => {
+  if (e.key.toLowerCase() === 'b') document.body.classList.toggle('debug');
+});
+</script>
+
+
 </style>
 </head>
 
@@ -546,8 +558,7 @@ centerCard.addEventListener('click', async () => {
         if (e.propertyName !== 'transform') return;
         centerCard.removeEventListener('transitionend', onT);
         setSrc(centerCard, 'champion.webp');
-        /* CHANGED: slower, smoother flip-out */
-        centerCard.style.transition = 'transform 600ms cubic-bezier(.22,1,.36,1)';
+        centerCard.style.transition = 'transform 380ms ease-out';
         centerCard.classList.remove('squish');
       }, { once:true });
     } else {
