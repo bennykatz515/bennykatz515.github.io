@@ -110,29 +110,31 @@ footer {
 /* ===== end progressive units ===== */
 
 .cardArea { position: absolute; inset: 0; }
-.card     { position:absolute; image-rendering:auto; filter: drop-shadow(0 6px 16px rgba(0,0,0,.45)); }
+
+/* CHANGED: use wrappers for shadows; no CSS filter on images */
+.cardWrap { position:absolute; box-shadow: 0 6px 16px rgba(0,0,0,.45); }
+.card     { display:block; width:100%; height:100%; image-rendering:auto; }
 
 /* Body (center card) */
-.centerCard { cursor:pointer; transition: transform 320ms ease-in, filter 300ms ease-in-out; }
+/* CHANGED: remove filter from transition */
+.centerCard { cursor:pointer; transition: transform 320ms ease-in; }
 .centerCard.squish { transform-origin:center; transform: scaleX(0.02); }
 
-/* yellow "ready" pulse (unchanged) */
+/* CHANGED: pulses use box-shadow instead of filter */
 @keyframes pulseGlow {
-  0%   { filter: drop-shadow(0 0 0 rgba(255,234,0,0)) drop-shadow(0 6px 16px rgba(0,0,0,.45)); }
-  50%  { filter: drop-shadow(0 0 22px rgba(255,234,0,.9)) drop-shadow(0 6px 16px rgba(0,0,0,.45)); }
-  100% { filter: drop-shadow(0 0 0 rgba(255,234,0,0)) drop-shadow(0 6px 16px rgba(0,0,0,.45)); }
+  0%   { box-shadow: 0 0 0 rgba(255,234,0,0), 0 6px 16px rgba(0,0,0,.45); }
+  50%  { box-shadow: 0 0 22px rgba(255,234,0,.9), 0 6px 16px rgba(0,0,0,.45); }
+  100% { box-shadow: 0 0 0 rgba(255,234,0,0), 0 6px 16px rgba(0,0,0,.45); }
 }
 .clickable { animation: pulseGlow 1.4s ease-in-out infinite; }
 
 /* red "can't click" pulse for champion */
 @keyframes pulseNoClickRed {
-  0%   { filter: drop-shadow(0 0 0 rgba(255,0,0,0)) drop-shadow(0 6px 16px rgba(0,0,0,.45)); }
-  45%  { filter: drop-shadow(0 0 22px rgba(255,0,0,.95)) drop-shadow(0 6px 16px rgba(0,0,0,.45)); }
-  100% { filter: drop-shadow(0 0 0 rgba(255,0,0,0)) drop-shadow(0 6px 16px rgba(0,0,0,.45)); }
+  0%   { box-shadow: 0 0 0 rgba(255,0,0,0), 0 6px 16px rgba(0,0,0,.45); }
+  45%  { box-shadow: 0 0 22px rgba(255,0,0,.95), 0 6px 16px rgba(0,0,0,.45); }
+  100% { box-shadow: 0 0 0 rgba(255,0,0,0), 0 6px 16px rgba(0,0,0,.45); }
 }
-.cantClickPulse {
-  animation: pulseNoClickRed 1.05s ease-in-out 0s 2; /* 2 quick red pulses */
-}
+.cantClickPulse { animation: pulseNoClickRed 1.05s ease-in-out 0s 2; }
 
 /* Arms (slow entrances/exits) */
 :root { --arm-in-ms: 3000ms; --arm-out-ms: 1200ms; }
@@ -224,19 +226,6 @@ img { -webkit-user-drag: none; user-drag: none; }
 /* TEMP iOS test: disable the big overlay entirely */
 /#waitlistBox { display: none !important; }/
 
-/* ==== BRIGHTNESS DEBUG MODE (hard overrides) ==== */
-body.debug .clickable { animation: none !important; }
-body.debug .card, 
-body.debug .centerCard, 
-body.debug .arm { 
-  filter: none !important; 
-  opacity: 1 !important; 
-  will-change: auto !important;
-  transition: none !important;
-  transform: none !important;
-}
-body.debug #curtain { display:none !important; }
-
 </style>
 </head>
 
@@ -256,10 +245,11 @@ body.debug #curtain { display:none !important; }
     <main>
       <div class="stage" id="stage" role="region" aria-label="Game stage">
         <div class="cardArea" id="cardArea">
-          <img id="centerCard" class="card centerCard" alt="Attendant" />
-          <img id="armLeft"   class="card arm" alt="Left Arm" />
-          <img id="armTop"    class="card arm" alt="Top Arm" />
-          <img id="armRight"  class="card arm" alt="Right Arm" />
+          <!-- CHANGED: wrap imgs so shadows don’t affect bitmap -->
+          <div id="centerCard" class="cardWrap centerCard"><img class="card" alt="Attendant" /></div>
+          <div id="armLeft"   class="cardWrap arm"><img class="card" alt="Left Arm" /></div>
+          <div id="armTop"    class="cardWrap arm"><img class="card" alt="Top Arm" /></div>
+          <div id="armRight"  class="cardWrap arm"><img class="card" alt="Right Arm" /></div>
           <div id="champFrame" class="champFrame" aria-hidden="true"></div>
         </div>
       </div>
@@ -281,14 +271,6 @@ body.debug #curtain { display:none !important; }
     </footer>
   </div>
 
-  <!-- Debug toggle button -->
-  <button id="dbgToggle" aria-label="Toggle brightness debug"
-          style="position:fixed;inset:auto 8px 8px auto;z-index:999999;
-                 padding:6px 8px;font:600 12px/1 system-ui;opacity:.6;
-                 border-radius:6px;border:1px solid #999;background:#222;color:#fff;">
-    DBG
-  </button>
-
 <script>
 /* =======================  DATA  ======================= */
 const manifest = [
@@ -302,17 +284,24 @@ const CLASSES = ['fighter','fucker','fracker','freak'];
 
 /* =======================  ELTS  ======================= */
 const stage      = document.getElementById('stage');
-const centerCard = document.getElementById('centerCard');
-const armLeft    = document.getElementById('armLeft');
-const armTop     = document.getElementById('armTop');
-const armRight   = document.getElementById('armRight');
+const centerCard = document.getElementById('centerCard');  // wrapper
+const armLeft    = document.getElementById('armLeft');     // wrapper
+const armTop     = document.getElementById('armTop');      // wrapper
+const armRight   = document.getElementById('armRight');    // wrapper
 const champFrame = document.getElementById('champFrame');
 
 /* =======================  HELPERS  ======================= */
 const preload = (url) => new Promise(res => { const i = new Image(); i.onload = i.onerror = res; i.src = url; });
 const prewarm = async () => { for (const u of manifest) await preload(u); };
-const setSrc  = (img, file) => { img.src = file; };
-const rc      = (arr) => arr[Math.floor(Math.random()*arr.length)];
+
+// CHANGED: setSrc targets inner <img> if a wrapper is passed
+function setSrc(el, file){
+  const img = el.tagName === 'IMG' ? el : el.querySelector('img');
+  if (img) img.src = file;
+}
+
+// random choice
+const rc = (arr) => arr[Math.floor(Math.random()*arr.length)];
 
 /* =======================  LAYOUT (3×2 T) — SCROLL-SAFE  ======================= */
 let BODY_AR = 375/525; // default portrait ratio so we can place immediately
@@ -448,9 +437,11 @@ let pendingArms = null;      // holds the set used for the next "enter" action
 async function init(){
   computeLayout(); placeCenter(); positionHotzone(); positionFooter();
 
-  centerCard.onload = () => {
-    if (centerCard.naturalWidth) {
-      BODY_AR = centerCard.naturalWidth / centerCard.naturalHeight;
+  // CHANGED: listen on inner image
+  const centerImg = centerCard.querySelector('img');
+  centerImg.onload = () => {
+    if (centerImg.naturalWidth) {
+      BODY_AR = centerImg.naturalWidth / centerImg.naturalHeight;
       computeLayout(); placeCenter(); positionHotzone(); positionFooter();
     }
   };
@@ -527,9 +518,7 @@ async function exitArms(){
 function pulseCantClick() {
   const els = [centerCard, armLeft, armTop, armRight];
   els.forEach(el => {
-    // ensure we don't stack pulses
     el.classList.remove('cantClickPulse');
-    // kick (reflow) so re-adding animation restarts it
     void el.offsetWidth;
     el.classList.add('cantClickPulse');
     el.addEventListener('animationend', function onA() {
@@ -585,48 +574,5 @@ document.addEventListener('contextmenu', (e) => {
   if (e.target.closest('.stage, .logo, .bg')) e.preventDefault();
 });
 </script>
-
-<!-- Brightness/animation hard-kill debug toggler -->
-<script>
-(function(){
-  const btn = document.getElementById('dbgToggle');
-  function applyHardKills(on){
-    const targets = [
-      document.getElementById('centerCard'),
-      document.getElementById('armLeft'),
-      document.getElementById('armTop'),
-      document.getElementById('armRight'),
-    ].filter(Boolean);
-    targets.forEach(el => {
-      if (on) {
-        el.style.filter = 'none';
-        el.style.opacity = '1';
-        el.style.willChange = 'auto';
-        el.style.transition = 'none';
-        el.style.transform = 'none';
-        el.style.animation = 'none';
-      } else {
-        el.style.filter = '';
-        el.style.opacity = '';
-        el.style.willChange = '';
-        el.style.transition = '';
-        el.style.transform = '';
-        el.style.animation = '';
-      }
-    });
-  }
-  function toggle() {
-    const on = !document.body.classList.contains('debug');
-    document.body.classList.toggle('debug', on);
-    applyHardKills(on);
-  }
-  btn?.addEventListener('click', toggle);
-  // desktop shortcut too
-  document.addEventListener('keydown', e=>{
-    if ((e.key||'').toLowerCase()==='b') toggle();
-  });
-})();
-</script>
-
 </body>
 </html>
