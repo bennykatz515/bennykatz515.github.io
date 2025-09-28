@@ -530,11 +530,9 @@ function pulseCantClick() {
 centerCard.addEventListener('click', async () => {
   if (busy) return;
 
-  // If champion is showing, clicks only produce a red "can't click" pulse.
-  if (locked) {
-    pulseCantClick();
-    return;
-  }
+// Champion shown: ignore clicks entirely
+if (locked) return;
+
 
   busy = true;
 
@@ -543,21 +541,26 @@ centerCard.addEventListener('click', async () => {
     if (!pendingArms) pendingArms = pickArms();
     await enterArms(pendingArms);
 
-    if (isChampion(pendingArms)) {
-      locked = true;
-      centerCard.classList.remove('clickable');
-      centerCard.classList.add('squish');
-      centerCard.addEventListener('transitionend', function onT(e){
-        if (e.propertyName !== 'transform') return;
-        centerCard.removeEventListener('transitionend', onT);
-        setSrc(centerCard, 'champion.webp');
-        centerCard.style.transition = 'transform 380ms ease-out';
-        centerCard.classList.remove('squish');
-      }, { once:true });
-    } else {
-      centerCard.classList.add('clickable');
-      pendingArms = null;
-    }
+if (isChampion(pendingArms)) {
+  locked = true;
+  centerCard.classList.remove('clickable');
+  centerCard.classList.add('squish');
+
+  centerCard.addEventListener('transitionend', function onT(e){
+    if (e.propertyName !== 'transform') return;
+    centerCard.removeEventListener('transitionend', onT);
+    setSrc(centerCard, 'champion.webp');
+    centerCard.style.transition = 'transform 380ms ease-out';
+    centerCard.classList.remove('squish');
+
+    // ↓ permanently disable clickability for champion
+    centerCard.classList.add('unclickable'); // or: centerCard.style.pointerEvents = 'none';
+  }, { once:true });
+} else {
+  centerCard.classList.add('clickable');
+  pendingArms = null;
+}
+
 
   } else if (state === 'armsIn') {
     centerCard.classList.remove('clickable');
