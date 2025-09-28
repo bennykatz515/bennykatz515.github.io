@@ -124,12 +124,6 @@ footer {
 }
 .centerCard.squish { transform-origin:center; transform: scaleX(0.02); }
 
-.centerCard.unclickable{
-  cursor: default !important;
-  pointer-events: none !important;
-  animation: none !important; /* kills the yellow pulse if present */
-}
-
 
 /* yellow "ready" pulse (unchanged) */
 @keyframes pulseGlow {
@@ -150,13 +144,19 @@ footer {
 }
 
 /* Arms (slow entrances/exits) */
-:root { --arm-in-ms: 3000ms; --arm-out-ms: 1200ms; }
+:root { --arm-in-ms: 2800ms; --arm-out-ms: 1200ms; }
+
 .arm {
-  opacity: 0; pointer-events: none;
-  will-change: transform, opacity;
+  opacity: 0;
+  pointer-events: none;
+  /* helps the last pixels feel buttery */
+  will-change: left, top, transform;
+  transform: translateZ(0);
   transition:
+    left      var(--arm-in-ms) cubic-bezier(.22,1,.36,1),
+    top       var(--arm-in-ms) cubic-bezier(.22,1,.36,1),
     transform var(--arm-in-ms) cubic-bezier(.22,1,.36,1),
-    opacity 420ms ease-out;
+    opacity   450ms ease-out;
 }
 
 
@@ -491,52 +491,31 @@ async function enterArms(arms){
   setSrc(armTop,   arms.top.file);
   setSrc(armRight, arms.right.file);
 
-  // Place at FINAL pixel positions (no left/top animation)
-  place(armLeft,  layout.left);
-  place(armTop,   layout.top);
-  place(armRight, layout.right);
-
-  // Tiny speed-up vs 3000ms
-  [armLeft, armTop, armRight].forEach(el => el.style.setProperty('--arm-in-ms', '2800ms'));
-
-  // Start off-screen via GPU transforms, then animate to rest
-  const w = stage.clientWidth, h = stage.clientHeight;
-  armLeft.style.opacity = armTop.style.opacity = armRight.style.opacity = '1';
-  armLeft.style.transform  = `translate3d(${-w}px,0,0) rotate(0deg)`;
-  armTop.style.transform   = `translate3d(0,${-h}px,0) rotate(0deg)`;
-  armRight.style.transform = `translate3d(${w}px,0,0) rotate(0deg)`;
+  place(armLeft,  layout.off.left);
+  place(armTop,   layout.off.top);
+  place(armRight, layout.off.right);
 
   requestAnimationFrame(() => {
-    armLeft.style.transform  = 'translate3d(0,0,0) rotate(0deg)';
-    armTop.style.transform   = 'translate3d(0,0,0) rotate(0deg)';
-    armRight.style.transform = 'translate3d(0,0,0) rotate(0deg)';
+    armLeft.style.opacity='1'; armTop.style.opacity='1'; armRight.style.opacity='1';
+    armLeft.style.transform='rotate(0deg)'; armTop.style.transform='rotate(0deg)'; armRight.style.transform='rotate(0deg)';
+    place(armLeft, layout.left); place(armTop, layout.top); place(armRight, layout.right);
   });
 
-  await new Promise(r => setTimeout(r, 2800 + 80));
-  // cleanup speed override
-  [armLeft, armTop, armRight].forEach(el => el.style.removeProperty('--arm-in-ms'));
-
+  await new Promise(r => setTimeout(r, 2800 + 20));
   state = 'armsIn';
 }
 
 async function exitArms(){
-  // Use a shorter transform duration for exit
-  [armLeft, armTop, armRight].forEach(el => el.style.setProperty('--arm-in-ms', '1200ms'));
-
-  const w = stage.clientWidth, h = stage.clientHeight;
   requestAnimationFrame(() => {
-    armLeft.style.transform  = `translate3d(${-w}px,0,0) rotate(-18deg)`;
-    armTop.style.transform   = `translate3d(0,${-h}px,0) rotate(-18deg)`;
-    armRight.style.transform = `translate3d(${w}px,0,0) rotate(18deg)`;
-    armLeft.style.opacity = armTop.style.opacity = armRight.style.opacity = '0';
+    armLeft.style.transform='rotate(-18deg)'; armTop.style.transform='rotate(-18deg)'; armRight.style.transform='rotate(18deg)';
+    place(armLeft, layout.off.left);
+    place(armTop,  layout.off.top);
+    place(armRight,layout.off.right);
+    armLeft.style.opacity='0'; armTop.style.opacity='0'; armRight.style.opacity='0';
   });
-
-  await new Promise(r => setTimeout(r, 1200 + 80));
-  [armLeft, armTop, armRight].forEach(el => el.style.removeProperty('--arm-in-ms'));
-
+  await new Promise(r => setTimeout(r, 1200 + 60));
   state = 'armsOut';
 }
-
 
 /* =======================  INTERACTION  ======================= */
 function pulseCantClick() {
@@ -557,9 +536,11 @@ function pulseCantClick() {
 centerCard.addEventListener('click', async () => {
   if (busy) return;
 
-// Champion shown: ignore clicks entirely
-if (locked) return;
-
+  // If champion is showing, clicks only produce a red "can't click" pulse.
+  if (locked) {
+    pulseCantClick();
+    return;
+  }
 
   busy = true;
 
@@ -568,28 +549,21 @@ if (locked) return;
     if (!pendingArms) pendingArms = pickArms();
     await enterArms(pendingArms);
 
-if (isChampion(pendingArms)) {
-  locked = true;
-  centerCard.classList.remove('clickable');
-  centerCard.classList.add('squish');
-
-  centerCard.addEventListener('transitionend', function onT(e){
-    if (e.propertyName !== 'transform') return;
-    centerCard.removeEventListener('transitionend', onT);
-    setSrc(centerCard, 'champion.webp');
-    centerCard.style.transition = 'transform 380ms ease-out';
-    centerCard.classList.remove('squish');
-
-    // ↓ permanently disable clickability for champion
-    centerCard.classList.add('unclickable'); 
-    centerCard.style.pointerEvents = 'none'; // makes it totally inert
-  }, { once:true });
-} else {
-  centerCard.classList.add('clickable');
-  pendingArms = null;
-}
-
-
+    if (isChampion(pendingArms)) {
+      locked = true;
+      centerCard.classList.remove('clickable');
+      centerCard.classList.add('squish');
+      centerCard.addEventListener('transitionend', function onT(e){
+        if (e.propertyName !== 'transform') return;
+        centerCard.removeEventListener('transitionend', onT);
+        setSrc(centerCard, 'champion.webp');
+        centerCard.style.transition = 'transform 380ms ease-out';
+        centerCard.classList.remove('squish');
+      }, { once:true });
+    } else {
+      centerCard.classList.add('clickable');
+      pendingArms = null;
+    }
 
   } else if (state === 'armsIn') {
     centerCard.classList.remove('clickable');
