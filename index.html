@@ -113,7 +113,8 @@ footer {
 .card     { position:absolute; image-rendering:auto; filter: drop-shadow(0 6px 16px rgba(0,0,0,.45)); }
 
 /* Body (center card) */
-.centerCard { cursor:pointer; transition: transform 320ms ease-in, filter 300ms ease-in-out; }
+/* CHANGED: slower, smoother transform easing */
+.centerCard { cursor:pointer; transition: transform 520ms cubic-bezier(.22,1,.36,1), filter 300ms ease-in-out; }
 .centerCard.squish { transform-origin:center; transform: scaleX(0.02); }
 
 /* yellow "ready" pulse (unchanged) */
@@ -135,14 +136,18 @@ footer {
 }
 
 /* Arms (slow entrances/exits) */
-:root { --arm-in-ms: 3000ms; --arm-out-ms: 1200ms; }
+/* CHANGED: timings + easing + GPU hints */
+:root { --arm-in-ms: 3600ms; --arm-out-ms: 1400ms; }
 .arm {
   opacity:0; pointer-events:none;
   transition:
-    left var(--arm-in-ms) cubic-bezier(.16,1,.3,1),
-    top  var(--arm-in-ms) cubic-bezier(.16,1,.3,1),
-    transform var(--arm-in-ms) cubic-bezier(.16,1,.3,1),
+    left var(--arm-in-ms) cubic-bezier(.22,1,.36,1),
+    top  var(--arm-in-ms) cubic-bezier(.22,1,.36,1),
+    transform var(--arm-in-ms) cubic-bezier(.22,1,.36,1),
     opacity 500ms ease-out;
+  backface-visibility: hidden;
+  will-change: left, top, transform;
+  transform: translateZ(0);
 }
 
 /* Champion perimeter frame — hidden per request */
@@ -541,7 +546,8 @@ centerCard.addEventListener('click', async () => {
         if (e.propertyName !== 'transform') return;
         centerCard.removeEventListener('transitionend', onT);
         setSrc(centerCard, 'champion.webp');
-        centerCard.style.transition = 'transform 380ms ease-out';
+        /* CHANGED: slower, smoother flip-out */
+        centerCard.style.transition = 'transform 600ms cubic-bezier(.22,1,.36,1)';
         centerCard.classList.remove('squish');
       }, { once:true });
     } else {
