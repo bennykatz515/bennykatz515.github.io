@@ -224,21 +224,18 @@ img { -webkit-user-drag: none; user-drag: none; }
 /* TEMP iOS test: disable the big overlay entirely */
 /#waitlistBox { display: none !important; }/
 
-/* ==== BRIGHTNESS DEBUG MODE ==== */
-body.debug .clickable { animation: none !important; }          /* kill glow */
-body.debug .card      { filter: none !important; }             /* kill drop-shadows */
-body.debug .arm       { transition: none !important; 
-                        transform: none !important; 
-                        opacity: 1 !important; }               /* freeze arms */
-body.debug #curtain   { display: none !important; }            /* no curtain fade */
-body.debug .stage     { outline: 1px dashed lime; }            /* visual cue */
-<script>
-/* Toggle with the "b" key to compare brightness with/without effects */
-document.addEventListener('keydown', (e) => {
-  if (e.key.toLowerCase() === 'b') document.body.classList.toggle('debug');
-});
-</script>
-
+/* ==== BRIGHTNESS DEBUG MODE (hard overrides) ==== */
+body.debug .clickable { animation: none !important; }
+body.debug .card, 
+body.debug .centerCard, 
+body.debug .arm { 
+  filter: none !important; 
+  opacity: 1 !important; 
+  will-change: auto !important;
+  transition: none !important;
+  transform: none !important;
+}
+body.debug #curtain { display:none !important; }
 
 </style>
 </head>
@@ -283,6 +280,14 @@ document.addEventListener('keydown', (e) => {
       <div class="copyright">© 2025 Car World Colosseum</div>
     </footer>
   </div>
+
+  <!-- Debug toggle button -->
+  <button id="dbgToggle" aria-label="Toggle brightness debug"
+          style="position:fixed;inset:auto 8px 8px auto;z-index:999999;
+                 padding:6px 8px;font:600 12px/1 system-ui;opacity:.6;
+                 border-radius:6px;border:1px solid #999;background:#222;color:#fff;">
+    DBG
+  </button>
 
 <script>
 /* =======================  DATA  ======================= */
@@ -580,5 +585,48 @@ document.addEventListener('contextmenu', (e) => {
   if (e.target.closest('.stage, .logo, .bg')) e.preventDefault();
 });
 </script>
+
+<!-- Brightness/animation hard-kill debug toggler -->
+<script>
+(function(){
+  const btn = document.getElementById('dbgToggle');
+  function applyHardKills(on){
+    const targets = [
+      document.getElementById('centerCard'),
+      document.getElementById('armLeft'),
+      document.getElementById('armTop'),
+      document.getElementById('armRight'),
+    ].filter(Boolean);
+    targets.forEach(el => {
+      if (on) {
+        el.style.filter = 'none';
+        el.style.opacity = '1';
+        el.style.willChange = 'auto';
+        el.style.transition = 'none';
+        el.style.transform = 'none';
+        el.style.animation = 'none';
+      } else {
+        el.style.filter = '';
+        el.style.opacity = '';
+        el.style.willChange = '';
+        el.style.transition = '';
+        el.style.transform = '';
+        el.style.animation = '';
+      }
+    });
+  }
+  function toggle() {
+    const on = !document.body.classList.contains('debug');
+    document.body.classList.toggle('debug', on);
+    applyHardKills(on);
+  }
+  btn?.addEventListener('click', toggle);
+  // desktop shortcut too
+  document.addEventListener('keydown', e=>{
+    if ((e.key||'').toLowerCase()==='b') toggle();
+  });
+})();
+</script>
+
 </body>
 </html>
