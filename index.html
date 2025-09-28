@@ -478,6 +478,12 @@ init();
 
 window.addEventListener('resize', () => {
   computeLayout(); placeCenter(); positionHotzone(); positionFooter();
+// ensure first-run starts from the OFF boxes
+place(armLeft,  layout.off.left);
+place(armTop,   layout.off.top);
+place(armRight, layout.off.right);
+armLeft.style.opacity='0'; armTop.style.opacity='0'; armRight.style.opacity='0';
+
   if (state === 'armsIn') { place(armLeft, layout.left); place(armTop, layout.top); place(armRight, layout.right); }
 });
 
@@ -498,14 +504,14 @@ async function enterArms(arms){
   setSrc(armTop,   arms.top.file);
   setSrc(armRight, arms.right.file);
 
-  // Try to ensure images are ready to paint on first run
+  // make sure images are paint-ready (first run can be racy)
   try {
     await Promise.allSettled([
       armLeft.decode ? armLeft.decode() : Promise.resolve(),
-      armTop.decode ? armTop.decode() : Promise.resolve(),
+      armTop.decode ? armTop.decode()  : Promise.resolve(),
       armRight.decode ? armRight.decode() : Promise.resolve(),
     ]);
-  } catch(_) { /* ignore decode issues; keep going */ }
+  } catch(_) {}
 
   // compute deltas from OFF → TARGET
   const dLx = layout.off.left.left  - layout.left.left;
@@ -521,28 +527,21 @@ async function enterArms(arms){
   place(armRight, layout.right);
 
   // initial state (off-screen via translate, hidden)
-  armLeft.style.opacity = '0';
-  armTop.style.opacity  = '0';
-  armRight.style.opacity= '0';
-
+  armLeft.style.opacity='0';  armTop.style.opacity='0';  armRight.style.opacity='0';
   armLeft.style.transform  = `translate(${dLx}px, ${dLy}px)`;
   armTop.style.transform   = `translate(${dTx}px, ${dTy}px)`;
   armRight.style.transform = `translate(${dRx}px, ${dRy}px)`;
 
-  // --- CRUCIAL: force a style flush so the browser commits initial state ---
-  // This prevents the first animation from being skipped on some desktops.
-  // Any read that forces layout works; offsetWidth is simple and fast.
+  // force a style/paint, then schedule the final state on the next *next* frame
+  // (double rAF avoids the first transition being coalesced on some desktops)
   void armLeft.offsetWidth; void armTop.offsetWidth; void armRight.offsetWidth;
-
-  // next frame: glide to final
   requestAnimationFrame(() => {
-    armLeft.style.opacity = '1';
-    armTop.style.opacity  = '1';
-    armRight.style.opacity= '1';
-
-    armLeft.style.transform  = 'translate(0, 0)';
-    armTop.style.transform   = 'translate(0, 0)';
-    armRight.style.transform = 'translate(0, 0)';
+    requestAnimationFrame(() => {
+      armLeft.style.opacity='1';  armTop.style.opacity='1';  armRight.style.opacity='1';
+      armLeft.style.transform='translate(0,0)';
+      armTop.style.transform='translate(0,0)';
+      armRight.style.transform='translate(0,0)';
+    });
   });
 
   await new Promise(r => setTimeout(r, 2800 + 20)); // matches --arm-in-ms
