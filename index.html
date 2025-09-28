@@ -498,6 +498,15 @@ async function enterArms(arms){
   setSrc(armTop,   arms.top.file);
   setSrc(armRight, arms.right.file);
 
+  // Try to ensure images are ready to paint on first run
+  try {
+    await Promise.allSettled([
+      armLeft.decode ? armLeft.decode() : Promise.resolve(),
+      armTop.decode ? armTop.decode() : Promise.resolve(),
+      armRight.decode ? armRight.decode() : Promise.resolve(),
+    ]);
+  } catch(_) { /* ignore decode issues; keep going */ }
+
   // compute deltas from OFF → TARGET
   const dLx = layout.off.left.left  - layout.left.left;
   const dLy = layout.off.left.top   - layout.left.top;
@@ -506,12 +515,12 @@ async function enterArms(arms){
   const dRx = layout.off.right.left - layout.right.left;
   const dRy = layout.off.right.top  - layout.right.top;
 
-  // pin each arm at its final left/top box so only transform animates
+  // pin each arm at its final box so only transform animates
   place(armLeft,  layout.left);
   place(armTop,   layout.top);
   place(armRight, layout.right);
 
-  // start translated from the off-screen delta
+  // initial state (off-screen via translate, hidden)
   armLeft.style.opacity = '0';
   armTop.style.opacity  = '0';
   armRight.style.opacity= '0';
@@ -520,7 +529,12 @@ async function enterArms(arms){
   armTop.style.transform   = `translate(${dTx}px, ${dTy}px)`;
   armRight.style.transform = `translate(${dRx}px, ${dRy}px)`;
 
-  // next frame: glide to zero-translate (final) — smooth to the last pixel
+  // --- CRUCIAL: force a style flush so the browser commits initial state ---
+  // This prevents the first animation from being skipped on some desktops.
+  // Any read that forces layout works; offsetWidth is simple and fast.
+  void armLeft.offsetWidth; void armTop.offsetWidth; void armRight.offsetWidth;
+
+  // next frame: glide to final
   requestAnimationFrame(() => {
     armLeft.style.opacity = '1';
     armTop.style.opacity  = '1';
@@ -534,6 +548,7 @@ async function enterArms(arms){
   await new Promise(r => setTimeout(r, 2800 + 20)); // matches --arm-in-ms
   state = 'armsIn';
 }
+
 
 async function exitArms(){
   // compute deltas from TARGET → OFF (reverse of enter)
