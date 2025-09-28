@@ -448,6 +448,19 @@ let pendingArms = null;      // holds the set used for the next "enter" action
 async function init(){
   computeLayout(); placeCenter(); positionHotzone(); positionFooter();
 
+// ensure first-run starts from the OFF boxes (before any click)
+place(armLeft,  layout.off.left);
+place(armTop,   layout.off.top);
+place(armRight, layout.off.right);
+armLeft.style.opacity = '0';
+armTop.style.opacity  = '0';
+armRight.style.opacity= '0';
+// make sure we don't accidentally show a final-frame transform on first paint
+armLeft.style.transform  = 'translate(0,0)';
+armTop.style.transform   = 'translate(0,0)';
+armRight.style.transform = 'translate(0,0)';
+
+
   centerCard.onload = () => {
     if (centerCard.naturalWidth) {
       BODY_AR = centerCard.naturalWidth / centerCard.naturalHeight;
@@ -478,11 +491,7 @@ init();
 
 window.addEventListener('resize', () => {
   computeLayout(); placeCenter(); positionHotzone(); positionFooter();
-// ensure first-run starts from the OFF boxes
-place(armLeft,  layout.off.left);
-place(armTop,   layout.off.top);
-place(armRight, layout.off.right);
-armLeft.style.opacity='0'; armTop.style.opacity='0'; armRight.style.opacity='0';
+
 
   if (state === 'armsIn') { place(armLeft, layout.left); place(armTop, layout.top); place(armRight, layout.right); }
 });
