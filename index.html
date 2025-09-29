@@ -377,42 +377,47 @@ function positionHotzone(){
   const hz = document.getElementById('waitlistBox');
   if (!hz || !layout) return;
 
-  // where the body ends (layout -> viewport coords)
+  // Body bottom in *layout* viewport coords
   const stageRect  = stage.getBoundingClientRect();
   const bodyBottom = stageRect.top + layout.body.top + layout.h;
 
-  // visual viewport (iOS pinch-zoom–aware)
+  // Visual viewport snapshot (pinch-zoom aware on iOS)
   const v = window.visualViewport
     ? { top: visualViewport.offsetTop, left: visualViewport.offsetLeft, w: visualViewport.width, h: visualViewport.height }
     : { top: 0, left: 0, w: window.innerWidth, h: window.innerHeight };
 
-  // desired top: just under the body, but never above visible viewport
-  let top = Math.max(Math.round(bodyBottom + 1), Math.floor(v.top));
+  // --- define clamps BEFORE use ---
+  const MIN_H = 44;
+  const MAX_H = Math.max(MIN_H, Math.round(layout.h * 0.6) + 60);
 
-  // size only the visible viewport below that point
-  const minH = 44; // keep tappable
-  const visibleBottom = v.top + v.h;
-  let height = Math.max(minH, Math.floor(visibleBottom - top - 8));
+  // Desired top in visual-viewport space
+  let topVV = Math.round((bodyBottom + 1) - v.top);
+  topVV = Math.max(0, Math.min(topVV, Math.max(0, v.h - MIN_H)));
 
-  // if body is already below visible area, pin a minimal strip at bottom
-  if (height < minH) {
-    height = minH;
-    top = Math.max(visibleBottom - height, v.top);
+  // Height limited to visible slice
+  let height = Math.floor(v.h - topVV - 8);
+  height = Math.max(MIN_H, Math.min(height, MAX_H));
+
+  if (height < MIN_H) {
+    height = MIN_H;
+    topVV = Math.max(v.h - height, 0);
   }
 
-  // lock to visual viewport box
+  // Fixed(0,0) + translate to visual viewport
   hz.style.position = 'fixed';
-  hz.style.top    = top + 'px';
-  hz.style.left   = v.left + 'px';
-  hz.style.width  = v.w + 'px';
-  hz.style.height = height + 'px';
+  hz.style.left = '0px';
+  hz.style.top  = '0px';
+  hz.style.width  = `${v.w}px`;
+  hz.style.height = `${height}px`;
+  hz.style.transform = `translate(${v.left}px, ${v.top + topVV}px) translateZ(0)`;
+  hz.style.willChange = 'transform';
 
-  // clear full-bleed props so it never stretches on zoom
+  // Clear to avoid full-bleed
   hz.style.right  = '';
   hz.style.bottom = '';
-
   hz.style.display = 'block';
 }
+
 
 
 function positionFooter() {
@@ -448,28 +453,36 @@ function relayoutVisible(){
   computeLayout();
   placeCenter();
 
-if (state === 'armsIn' || state === 'animIn') {
-  place(armLeft, layout.left);
-  place(armTop,  layout.top);
-  place(armRight,layout.right);
-} else {
-  place(armLeft, layout.off.left);
-  place(armTop,  layout.off.top);
-  place(armRight,layout.off.right);
-}
-
+  if (state === 'armsIn' || state === 'animIn') {
+    place(armLeft, layout.left);
+    place(armTop,  layout.top);
+    place(armRight, layout.right);
+  } else {
+    place(armLeft, layout.off.left);
+    place(armTop,  layout.off.top);
+    place(armRight, layout.off.right);
+  }
 
   positionHotzone();
   positionFooter();
-
 }
 
-window.addEventListener('resize', relayoutVisible);
-window.addEventListener('scroll',  relayoutVisible, { passive: true });
+/* Debounce to smooth out iOS visualViewport churn during pinch-zoom */
+let _vvTO = null;
+function relayoutVisibleDebounced(){
+  clearTimeout(_vvTO);
+  _vvTO = setTimeout(relayoutVisible, 16); // ~1 frame
+}
+
+/* Listen once, use the debounced handler everywhere */
+window.addEventListener('resize', relayoutVisibleDebounced);
+window.addEventListener('scroll',  relayoutVisibleDebounced, { passive: true });
+window.addEventListener('orientationchange', relayoutVisibleDebounced);
+
 
 if (window.visualViewport) {
-  visualViewport.addEventListener('resize',  relayoutVisible);
-  visualViewport.addEventListener('scroll',  relayoutVisible, { passive: true });
+  visualViewport.addEventListener('resize', relayoutVisibleDebounced);
+  visualViewport.addEventListener('scroll',  relayoutVisibleDebounced, { passive: true });
 }
 
 
@@ -524,23 +537,7 @@ armRight.style.transform = 'translate(0,0)';
 
 init();
 
-// AFTER init();
-window.addEventListener('resize', () => {
-  computeLayout();
-  placeCenter();
-  positionHotzone();
-  positionFooter();
 
-  if (state === 'armsIn' || state === 'animIn') {
-    place(armLeft, layout.left);
-    place(armTop,  layout.top);
-    place(armRight, layout.right);
-  } else {
-    place(armLeft, layout.off.left);
-    place(armTop,  layout.off.top);
-    place(armRight, layout.off.right);
-  }
-});
 
 
 /* =======================  GAME LOGIC  ======================= */
