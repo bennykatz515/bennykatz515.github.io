@@ -226,9 +226,9 @@ img { -webkit-user-drag: none; user-drag: none; }
 #waitlistBox{
   position: fixed;
   left: 0; right: 0;
-  z-index: 2147483647;      /* sit above everything */
+  z-index: 2147483647;
   display: block;
-  pointer-events: auto;     /* make sure it can receive clicks */
+  pointer-events: auto;
   background: transparent !important;
   border: 0 !important;
   outline: none !important;
@@ -240,7 +240,12 @@ img { -webkit-user-drag: none; user-drag: none; }
   /* TEMP while testing so you can see it; remove later */
   background: rgba(0,255,255,.18) !important;
   outline: 1px dashed #00ced1;
+
+  /* iOS fixed-position nudge */
+  will-change: transform;
+  transform: translateZ(0);
 }
+
 
 /* TEMP iOS test: disable the big overlay entirely */
 /* #waitlistBox { display: none !important; } */
@@ -372,10 +377,43 @@ function positionHotzone(){
   const hz = document.getElementById('waitlistBox');
   if (!hz || !layout) return;
 
+  // where the body ends (layout coords -> viewport coords)
   const stageRect  = stage.getBoundingClientRect();
   const bodyBottom = stageRect.top + layout.body.top + layout.h;
 
-  const topPx = Math.max(0, Math.round(bodyBottom + 1)); // 1px gap
+  // visual viewport (iOS pinch-zoom–aware)
+  const v = window.visualViewport
+    ? { top: visualViewport.offsetTop, left: visualViewport.offsetLeft, w: visualViewport.width, h: visualViewport.height }
+    : { top: 0, left: 0, w: window.innerWidth, h: window.innerHeight };
+
+  // desired top: 1px under the body, but never above the visible viewport
+  let top = Math.max(Math.round(bodyBottom + 1), Math.floor(v.top));
+
+  // size the hotzone only to the *visible* viewport below that point
+  const minH = 44; // keep it tappable
+  const visibleBottom = v.top + v.h;
+  let height = Math.max(minH, Math.floor(visibleBottom - top - 8));
+
+  // if body is already below the visible area, pin a minimal strip at bottom
+  if (height < minH) {
+    height = minH;
+    top = Math.max(visibleBottom - height, v.top);
+  }
+
+  // lock to the visual viewport box
+  hz.style.position = 'fixed';
+  hz.style.top    = top + 'px';
+  hz.style.left   = v.left + 'px';
+  hz.style.width  = v.w + 'px';
+  hz.style.height = height + 'px';
+
+  // IMPORTANT: clear these so it never full-bleeds when zoomed
+  hz.style.right  = '';
+  hz.style.bottom = '';
+
+  hz.style.display = 'block';
+}
+
 
   // ===== overlay guard patch (added) =====
   const minTop = Math.round(bodyBottom - layout.h * 0.2); // never jump above near-body area
@@ -439,6 +477,12 @@ if (state === 'armsIn' || state === 'animIn') {
 
 window.addEventListener('resize', relayoutVisible);
 window.addEventListener('scroll',  relayoutVisible, { passive: true });
+
+if (window.visualViewport) {
+  visualViewport.addEventListener('resize',  relayoutVisible);
+  visualViewport.addEventListener('scroll',  relayoutVisible, { passive: true });
+}
+
 
 /* =======================  STATE  ======================= */
 let state = 'boot';          // 'idle', 'animIn', 'armsIn', 'armsOut'
