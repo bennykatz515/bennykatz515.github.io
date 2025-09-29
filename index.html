@@ -71,7 +71,6 @@ footer {
   position: fixed;           /* fixed so we can place it precisely */
   left: 0;
   right: 0;
-  top: 70vh;                 /* temporary; JS will set exact top */
   z-index: 10000;            /* above the hotzone (9999) */
   display: grid;
   place-items: center;
@@ -213,6 +212,18 @@ footer {
   }
   .cta .line { display: inline; }
 }
+/* >>> add this near your CTA styles <<< */
+.ctaLink {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  padding: 14px 16px max(18px, env(safe-area-inset-bottom));
+  margin: 0 auto;
+  max-width: min(92vw, 520px);
+  border-radius: 16px;
+  -webkit-tap-highlight-color: transparent;
+}
+
 
 .copyright {
   text-align: center;
@@ -222,28 +233,6 @@ footer {
 
 img { -webkit-user-drag: none; user-drag: none; }
 
-/* ===== Visible overlay clickbox for testing ===== */
-#waitlistBox{
-  position: fixed;
-  left: 0; right: 0;
-  z-index: 2147483647;      /* sit above everything */
-  display: block;
-  pointer-events: auto;     /* make sure it can receive clicks */
-  background: transparent !important;
-  border: 0 !important;
-  outline: none !important;
-  text-decoration: none;
-  -webkit-tap-highlight-color: transparent;
-  -webkit-touch-callout: none;
-  touch-action: manipulation;
-
-  /* TEMP while testing so you can see it; remove later */
-  background: rgba(0,255,255,.18) !important;
-  outline: 1px dashed #00ced1;
-}
-
-/* TEMP iOS test: disable the big overlay entirely */
-/#waitlistBox { display: none !important; }/
 
 </style>
 </head>
@@ -273,20 +262,22 @@ img { -webkit-user-drag: none; user-drag: none; }
       </div>
     </main>
 
-    <!-- Visible overlay clickbox linking to the waitlist (for testing) -->
-    <a id="waitlistBox"
-       href="https://forms.gle/hJcNRWekxT2RLGMHA"
-       target="_blank" rel="noopener"
-       aria-label="Join the waiting list"></a>
 
-    <footer>
-      <div class="cta" role="text">
-        <span class="line">JOIN THE <span class="blue">WAITLIST</span></span>
-        <span class="line">FOR A CHANCE TO WIN</span>
-        <span class="line">A <span class="gold">GOLDEN ATTENDANT</span></span>
-      </div>
-      <div class="copyright">© 2025 Car World Colosseum</div>
-    </footer>
+<footer>
+  <a class="ctaLink"
+     href="https://forms.gle/hJcNRWekxT2RLGMHA"
+     target="_blank" rel="noopener"
+     aria-label="Join the waiting list">
+    <div class="cta" role="text">
+      <span class="line">JOIN THE <span class="blue">WAITLIST</span></span>
+      <span class="line">FOR A CHANCE TO WIN</span>
+      <span class="line">A <span class="gold">GOLDEN ATTENDANT</span></span>
+    </div>
+  </a>
+  <div class="copyright">© 2025 Car World Colosseum</div>
+</footer>
+
+
   </div>
 
 <script>
@@ -313,6 +304,17 @@ const preload = (url) => new Promise(res => { const i = new Image(); i.onload = 
 const prewarm = async () => { for (const u of manifest) await preload(u); };
 const setSrc  = (img, file) => { img.src = file; };
 const rc      = (arr) => arr[Math.floor(Math.random()*arr.length)];
+function vv() {
+  const v = window.visualViewport;
+  return v ? {
+    width: v.width, height: v.height, scale: v.scale,
+    offsetTop: v.offsetTop, offsetLeft: v.offsetLeft
+  } : {
+    width: window.innerWidth, height: window.innerHeight,
+    scale: 1, offsetTop: 0, offsetLeft: 0
+  };
+}
+
 
 /* =======================  LAYOUT (3×2 T) — SCROLL-SAFE  ======================= */
 let BODY_AR = 375/525; // default portrait ratio so we can place immediately
@@ -367,53 +369,44 @@ function place(el, rect){
 }
 function placeCenter(){ place(centerCard, layout.body); }
 
-function positionHotzone(){
-  const hz = document.getElementById('waitlistBox');
-  if (!hz || !layout) return;
-
-  const stageRect  = stage.getBoundingClientRect();
-  const bodyBottom = stageRect.top + layout.body.top + layout.h;
-
-  const topPx = Math.max(0, Math.round(bodyBottom + 1)); // 1px gap
-
-  // ===== overlay guard patch (added) =====
-  const minTop = Math.round(bodyBottom - layout.h * 0.2); // never jump above near-body area
-  hz.style.top = Math.max(topPx, minTop) + 'px';
-  // ===== end patch =====
-
-  hz.style.bottom = '0';
-  hz.style.left = '0';
-  hz.style.right = '0';
-  hz.style.display = 'block';
-}
 
 function positionFooter() {
   const footer = document.querySelector('footer');
   if (!footer || !layout) return;
 
-  // measure footer height (ensure it’s rendered)
+  // measure footer height
+  const prevVis = footer.style.visibility;
+  const prevTop = footer.style.top;
+  const prevBottom = footer.style.bottom;
   footer.style.visibility = 'hidden';
   footer.style.top = '0px';
   footer.style.bottom = '';
   footer.style.display = 'grid';
   const footerH = footer.getBoundingClientRect().height || 0;
-  footer.style.visibility = '';
+  footer.style.visibility = prevVis || '';
+  footer.style.top = prevTop || '';
+  footer.style.bottom = prevBottom || '';
 
-  // body bottom in viewport coords: stage top + body top + card height
-  const stageRect = stage.getBoundingClientRect();
+  const stageRect  = stage.getBoundingClientRect();
   const bodyBottom = stageRect.top + layout.body.top + layout.h;
-
-  // place footer 10px below the body, but keep it on-screen
   const gap = 10;
-  let topPx = Math.round(bodyBottom + gap);
 
-  // clamp: never let footer go off bottom edge
-  const maxTop = Math.max(0, window.innerHeight - footerH);
-  if (topPx > maxTop) topPx = maxTop;
+  // Use visual viewport so it stays put while zooming on iOS
+  const v = vv();
 
-  footer.style.top = topPx + 'px';
-  footer.style.bottom = ''; // we’re anchoring by top
+  // Desired top in *document* coords
+  let desiredTop = Math.round(bodyBottom + gap);
+
+  // Clamp to the visible zoomed viewport
+  const maxTop = Math.floor(v.offsetTop + v.height - footerH);
+  if (desiredTop > maxTop) desiredTop = maxTop;
+  if (desiredTop < v.offsetTop) desiredTop = v.offsetTop;
+
+  footer.style.position = 'fixed';
+  footer.style.top = desiredTop + 'px';
+  footer.style.bottom = '';
 }
+
 
 /* Keep layout correct on resize/scroll (and move the waitlist hotzone) */
 function relayoutVisible(){
@@ -430,13 +423,18 @@ function relayoutVisible(){
     place(armRight,layout.off.right);
   }
 
-  positionHotzone();
   positionFooter();
 
 }
 
 window.addEventListener('resize', relayoutVisible);
 window.addEventListener('scroll',  relayoutVisible, { passive: true });
+
+if (window.visualViewport) {
+  visualViewport.addEventListener('resize', relayoutVisible);
+  visualViewport.addEventListener('scroll',  relayoutVisible, { passive: true });
+}
+
 
 /* =======================  STATE  ======================= */
 let state = 'boot';          // 'idle' (no arms), 'armsIn' (visible), 'armsOut' (hidden)
@@ -446,7 +444,7 @@ let pendingArms = null;      // holds the set used for the next "enter" action
 
 /* =======================  INIT  ======================= */
 async function init(){
-  computeLayout(); placeCenter(); positionHotzone(); positionFooter();
+  computeLayout(); placeCenter(); positionFooter();
 
 // ensure first-run starts from the OFF boxes (before any click)
 place(armLeft,  layout.off.left);
@@ -464,7 +462,7 @@ armRight.style.transform = 'translate(0,0)';
   centerCard.onload = () => {
     if (centerCard.naturalWidth) {
       BODY_AR = centerCard.naturalWidth / centerCard.naturalHeight;
-      computeLayout(); placeCenter(); positionHotzone(); positionFooter();
+      computeLayout(); placeCenter(); positionFooter();
     }
   };
   setSrc(centerCard, 'body.webp');
@@ -489,12 +487,6 @@ armRight.style.transform = 'translate(0,0)';
 
 init();
 
-window.addEventListener('resize', () => {
-  computeLayout(); placeCenter(); positionHotzone(); positionFooter();
-
-
-  if (state === 'armsIn') { place(armLeft, layout.left); place(armTop, layout.top); place(armRight, layout.right); }
-});
 
 /* =======================  GAME LOGIC  ======================= */
 function pickArms(){
