@@ -169,25 +169,42 @@ footer {
 /* Champion perimeter frame — hidden per request */
 .champFrame { display:none !important; }
 
-/* ===== Champion congrats text ===== */
+/* ===== Champion congrats text (bigger, stacked, fills screen edges) ===== */
 #champCongrats{
-  position:fixed; inset:auto; left:50%; top:50%;
-  transform: translate(-50%,-50%) scale(0.6);
+  position:fixed; left:50%; top:50%; transform:translate(-50%,-50%) scale(0.7);
   z-index:2147483645;
   font-family:"BlackBeard", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-  font-weight: 700;                     /* bold */
-  color:#800000;                        /* default maroon; JS will override per class if needed */
-  -webkit-text-stroke: 2px #000;        /* black outline */
-  text-shadow: 0 3px 10px rgba(0,0,0,.55);
-  letter-spacing:.02em;
+  font-weight:700; 
+  color:#800000;                     /* JS overrides per class */
+  -webkit-text-stroke: 3px #000;     /* thicker outline for huge size */
+  text-shadow: 0 4px 14px rgba(0,0,0,.55);
+  letter-spacing:.01em;
+  line-height: .85;
+  text-align:center;
   white-space:nowrap;
   opacity:0;
-  animation: champBalloon 1400ms ease-out forwards;
+
+  /* Big by default so it “kisses” the edges on most screens */
+  font-size: clamp(28px, 10vw, 22vw);
+
+  /* Animate: pop in, swell, then fade */
+  animation: champBalloon 2600ms ease-out forwards;
 }
+
+#champCongrats .line{
+  display:block;
+}
+
+/* Optional: make second line ever-so-slightly smaller for balance */
+#champCongrats .line:nth-child(2){
+  font-size: .94em;
+}
+
 @keyframes champBalloon{
   0%   { opacity:0; transform:translate(-50%,-50%) scale(0.6); }
-  60%  { opacity:1; transform:translate(-50%,-50%) scale(1.15); }
-  100% { opacity:0; transform:translate(-50%,-50%) scale(1.0); }
+  20%  { opacity:1; transform:translate(-50%,-50%) scale(1.00); }
+  65%  { opacity:1; transform:translate(-50%,-50%) scale(1.12); }
+  100% { opacity:0; transform:translate(-50%,-50%) scale(1.12); }
 }
 
 /* ===== Confetti canvas overlay ===== */
@@ -361,56 +378,69 @@ const CHAMP_COLORS = {
 function showChampionCongrats(hex){
   const el = document.createElement('div');
   el.id = 'champCongrats';
-  el.textContent = 'CONGRATULATIONS CHAMPION';
-  el.style.color = hex;
+  el.innerHTML = '<span class="line">CONGRATULATIONS</span><span class="line">CHAMPION</span>';
+  el.style.color = hex;                     // class color
   document.body.appendChild(el);
   el.addEventListener('animationend', () => el.remove(), { once:true });
 }
 
-function fireConfetti(hex){
-  // minimal, self-cleaning canvas burst
+function fireConfettiSeries(hex, {bursts=6, durationMs=3400, perBurst=120} = {}){
+  // one canvas reused for all bursts
   const cvs = document.createElement('canvas');
   cvs.id = 'confettiCanvas';
   const ctx = cvs.getContext('2d');
   document.body.appendChild(cvs);
 
   const DPR = Math.max(1, window.devicePixelRatio || 1);
-  function resize(){
-    cvs.width  = Math.floor(window.innerWidth  * DPR);
-    cvs.height = Math.floor(window.innerHeight * DPR);
-  }
-  resize();
+  function size() { cvs.width = Math.floor(innerWidth*DPR); cvs.height = Math.floor(innerHeight*DPR); }
+  size();
 
-  // particles
-  const N = 140;                       // small burst
-  const cx = cvs.width  / 2;
-  const cy = cvs.height / 2;
-  const parts = Array.from({length:N}, () => {
-    const a = Math.random() * Math.PI * 2;
-    const sp = 4 + Math.random()*7;    // speed
-    return {
-      x: cx, y: cy,
-      vx: Math.cos(a) * sp * DPR,
-      vy: Math.sin(a) * sp * DPR - 2*DPR,
-      w:  2*DPR + Math.random()*3*DPR,
-      h:  6*DPR + Math.random()*10*DPR,
-      r:  Math.random()*Math.PI,
-      vr: (Math.random()-0.5)*0.3,
-      alpha: 1
-    };
-  });
-
-  const color = hex;
+  const parts = [];
   const grav = 0.12 * DPR;
   const drag = 0.995;
-  const lifeMs = 1300;
-  const t0 = performance.now();
 
-  function tick(t){
-    const k = (t - t0) / lifeMs;
+  function spawnBurst(x, y, count = perBurst){
+    const a0 = Math.random() * Math.PI * 2; // slight directional bias per burst
+    for (let i=0;i<count;i++){
+      const a = a0 + (Math.random()-0.5) * Math.PI * 2;
+      const sp = (4 + Math.random()*7) * DPR;
+      parts.push({
+        x: x*DPR, y: y*DPR,
+        vx: Math.cos(a) * sp,
+        vy: Math.sin(a) * sp - 1.5*DPR,
+        w:  2*DPR + Math.random()*3*DPR,
+        h:  6*DPR + Math.random()*10*DPR,
+        r:  Math.random()*Math.PI,
+        vr: (Math.random()-0.5)*0.35,
+        t0: performance.now(),
+        life: 1100 + Math.random()*900, // ms
+        alpha: 1
+      });
+    }
+  }
+
+  // schedule bursts scattered across the viewport
+  const tStart = performance.now();
+  const gap = durationMs / Math.max(1, bursts); // spacing between bursts
+  for (let i=0;i<bursts;i++){
+    const when = i*gap;
+    const px = 0.12 + Math.random()*0.76; // avoid extreme edges
+    const py = 0.18 + Math.random()*0.64;
+    setTimeout(() => spawnBurst(innerWidth*px, innerHeight*py), when);
+  }
+
+  // also do one center burst at the start for emphasis
+  spawnBurst(innerWidth*0.5, innerHeight*0.5, Math.round(perBurst*1.2));
+
+  function tick(now){
     ctx.clearRect(0,0,cvs.width,cvs.height);
-
-    parts.forEach(p => {
+    for (let i=parts.length-1;i>=0;i--){
+      const p = parts[i];
+      const k = (now - p.t0) / p.life;
+      if (k >= 1){
+        parts.splice(i,1);
+        continue;
+      }
       p.vx *= drag; p.vy = p.vy*drag + grav;
       p.x += p.vx;  p.y += p.vy;  p.r += p.vr;
       p.alpha = Math.max(0, 1 - k*k);
@@ -418,12 +448,13 @@ function fireConfetti(hex){
       ctx.globalAlpha = p.alpha;
       ctx.translate(p.x, p.y);
       ctx.rotate(p.r);
-      ctx.fillStyle = color;
+      ctx.fillStyle = hex;
       ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
       ctx.restore();
-    });
+    }
 
-    if (t - t0 < lifeMs){
+    const timeUp = now - tStart > durationMs + 1200; // let stragglers fade
+    if (!timeUp || parts.length){
       requestAnimationFrame(tick);
     } else {
       cvs.remove();
@@ -431,6 +462,7 @@ function fireConfetti(hex){
   }
   requestAnimationFrame(tick);
 }
+
 
 /* Call once when the Champion is confirmed */
 function onChampionReveal(winnerClass){
@@ -442,9 +474,10 @@ function onChampionReveal(winnerClass){
   centerCard.style.cursor = 'default';
   centerCard.style.pointerEvents = 'none';
 
-  // FX
-  fireConfetti(hex);
-  showChampionCongrats(hex);
+// FX
+fireConfettiSeries(hex, { bursts: 7, durationMs: 4200, perBurst: 140 }); // around-screen, a few seconds
+showChampionCongrats(hex);                                               // huge stacked headline
+
 }
 
 /* =======================  LAYOUT (3×2 T) — SCROLL-SAFE  ======================= */
