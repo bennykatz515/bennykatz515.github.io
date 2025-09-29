@@ -377,7 +377,7 @@ function positionHotzone(){
   const hz = document.getElementById('waitlistBox');
   if (!hz || !layout) return;
 
-  // where the body ends (layout coords -> viewport coords)
+  // where the body ends (layout -> viewport coords)
   const stageRect  = stage.getBoundingClientRect();
   const bodyBottom = stageRect.top + layout.body.top + layout.h;
 
@@ -386,45 +386,34 @@ function positionHotzone(){
     ? { top: visualViewport.offsetTop, left: visualViewport.offsetLeft, w: visualViewport.width, h: visualViewport.height }
     : { top: 0, left: 0, w: window.innerWidth, h: window.innerHeight };
 
-  // desired top: 1px under the body, but never above the visible viewport
+  // desired top: just under the body, but never above visible viewport
   let top = Math.max(Math.round(bodyBottom + 1), Math.floor(v.top));
 
-  // size the hotzone only to the *visible* viewport below that point
-  const minH = 44; // keep it tappable
+  // size only the visible viewport below that point
+  const minH = 44; // keep tappable
   const visibleBottom = v.top + v.h;
   let height = Math.max(minH, Math.floor(visibleBottom - top - 8));
 
-  // if body is already below the visible area, pin a minimal strip at bottom
+  // if body is already below visible area, pin a minimal strip at bottom
   if (height < minH) {
     height = minH;
     top = Math.max(visibleBottom - height, v.top);
   }
 
-  // lock to the visual viewport box
+  // lock to visual viewport box
   hz.style.position = 'fixed';
   hz.style.top    = top + 'px';
   hz.style.left   = v.left + 'px';
   hz.style.width  = v.w + 'px';
   hz.style.height = height + 'px';
 
-  // IMPORTANT: clear these so it never full-bleeds when zoomed
+  // clear full-bleed props so it never stretches on zoom
   hz.style.right  = '';
   hz.style.bottom = '';
 
   hz.style.display = 'block';
 }
 
-
-  // ===== overlay guard patch (added) =====
-  const minTop = Math.round(bodyBottom - layout.h * 0.2); // never jump above near-body area
-  hz.style.top = Math.max(topPx, minTop) + 'px';
-  // ===== end patch =====
-
-  hz.style.bottom = '0';
-  hz.style.left = '0';
-  hz.style.right = '0';
-  hz.style.display = 'block';
-}
 
 function positionFooter() {
   const footer = document.querySelector('footer');
