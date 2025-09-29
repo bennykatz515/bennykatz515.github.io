@@ -225,7 +225,7 @@ img { -webkit-user-drag: none; user-drag: none; }
 /* ===== Visible overlay clickbox for testing ===== */
 #waitlistBox{
   position: fixed;
-  left: 0; right: 0;
+  left: 0;
   z-index: 2147483647;
   display: block;
   pointer-events: auto;
@@ -375,56 +375,84 @@ function placeCenter(){ place(centerCard, layout.body); }
 
 function positionHotzone(){
   const hz = document.getElementById('waitlistBox');
-  if (!hz || !layout) return;
+  if (!hz || !layout || !centerCard) return;
 
-  // Body bottom in *layout* viewport coords
-  const stageRect  = stage.getBoundingClientRect();
-  const bodyBottom = stageRect.top + layout.body.top + layout.h;
+  // Rect of the body card in *layout viewport* coords
+  const bodyRect = centerCard.getBoundingClientRect();
 
   // Visual viewport snapshot (pinch-zoom aware on iOS)
   const v = window.visualViewport
     ? { top: visualViewport.offsetTop, left: visualViewport.offsetLeft, w: visualViewport.width, h: visualViewport.height }
     : { top: 0, left: 0, w: window.innerWidth, h: window.innerHeight };
 
-  // --- define clamps BEFORE use ---
-  const MIN_H = 44;
+  // Clamp constants
+  const MIN_H = 44;                                    // always tappable
   const MAX_H = Math.max(MIN_H, Math.round(layout.h * 0.6) + 60);
 
-  // Desired top in visual-viewport space
-  let topVV = Math.round((bodyBottom + 1) - v.top);
-  topVV = Math.max(0, Math.min(topVV, Math.max(0, v.h - MIN_H)));
+  // Convert the body bottom (layout coords) into *visual viewport* offset space
+  // We keep the hotzone directly under the body card and match its width/left.
+  let topVV   = Math.round((bodyRect.bottom + 1) - v.top);
+  let leftVV  = Math.round(bodyRect.left - v.left);
+  let width   = Math.round(bodyRect.width);
 
-  // Height limited to visible slice
+  // Height = the visible slice below the body (never huge)
   let height = Math.floor(v.h - topVV - 8);
   height = Math.max(MIN_H, Math.min(height, MAX_H));
 
+  // Optional: hide if body completely outside visual viewport
+  const vBottom = v.top + v.h;
+  if (bodyRect.bottom <= v.top || bodyRect.top >= vBottom) {
+    hz.style.display = 'none';
+    return;
+  }
+
+  // Clamp horizontal placement to the visible area
+  if (leftVV < 0) {
+    width = Math.max(0, width + leftVV); // shrink if left is clipped
+    leftVV = 0;
+  }
+  width = Math.min(width, v.w); // never exceed viewport width
+  if (width < 1) {
+    hz.style.display = 'none';
+    return;
+  }
+
+  if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+    hz.style.display = 'none';
+    return;
+  }
+
+  // If body bottom is already below the visible area, pin a minimal strip at bottom
   if (height < MIN_H) {
     height = MIN_H;
     topVV = Math.max(v.h - height, 0);
   }
 
-  // Fixed(0,0) + translate to visual viewport
+  // Place via fixed(0,0) + translate into visual viewport
   hz.style.position = 'fixed';
-  hz.style.left = '0px';
   hz.style.top  = '0px';
-  hz.style.width  = `${v.w}px`;
+  hz.style.left = '0px';
+  hz.style.width  = `${width}px`;
   hz.style.height = `${height}px`;
-  hz.style.transform = `translate(${v.left}px, ${v.top + topVV}px) translateZ(0)`;
-  hz.style.willChange = 'transform';
 
-  // Clear to avoid full-bleed
+  // Final placement in visual-viewport space (GPU nudge)
+  hz.style.transform = `translate(${v.left + leftVV}px, ${v.top + topVV}px) translateZ(0)`;
+  hz.style.transformOrigin = 'top left'; // helps avoid subpixel drift
+  hz.style.willChange = 'transform';     // ← added
+
+  // Clear so it NEVER full-bleeds
   hz.style.right  = '';
   hz.style.bottom = '';
+
   hz.style.display = 'block';
 }
-
 
 
 function positionFooter() {
   const footer = document.querySelector('footer');
   if (!footer || !layout) return;
 
-  // measure footer height (ensure it’s rendered)
+  // measure footer
   footer.style.visibility = 'hidden';
   footer.style.top = '0px';
   footer.style.bottom = '';
@@ -432,21 +460,23 @@ function positionFooter() {
   const footerH = footer.getBoundingClientRect().height || 0;
   footer.style.visibility = '';
 
-  // body bottom in viewport coords: stage top + body top + card height
   const stageRect = stage.getBoundingClientRect();
   const bodyBottom = stageRect.top + layout.body.top + layout.h;
 
-  // place footer 10px below the body, but keep it on-screen
+  // visual viewport aware clamp
+  const v = window.visualViewport
+    ? { top: visualViewport.offsetTop, h: visualViewport.height }
+    : { top: 0, h: window.innerHeight };
+
   const gap = 10;
   let topPx = Math.round(bodyBottom + gap);
-
-  // clamp: never let footer go off bottom edge
-  const maxTop = Math.max(0, window.innerHeight - footerH);
+  const maxTop = Math.max(v.top, v.top + v.h - footerH);
   if (topPx > maxTop) topPx = maxTop;
 
-  footer.style.top = topPx + 'px';
-  footer.style.bottom = ''; // we’re anchoring by top
+  footer.style.top = `${topPx}px`;
+  footer.style.bottom = '';
 }
+
 
 /* Keep layout correct on resize/scroll (and move the waitlist hotzone) */
 function relayoutVisible(){
@@ -468,22 +498,37 @@ function relayoutVisible(){
 }
 
 /* Debounce to smooth out iOS visualViewport churn during pinch-zoom */
-let _vvTO = null;
-function relayoutVisibleDebounced(){
-  clearTimeout(_vvTO);
-  _vvTO = setTimeout(relayoutVisible, 16); // ~1 frame
+let _raf = 0;
+function relayoutVisibleRaf(){
+  if (_raf) return;
+  _raf = requestAnimationFrame(() => {
+    _raf = 0;
+    relayoutVisible();
+  });
 }
 
-/* Listen once, use the debounced handler everywhere */
-window.addEventListener('resize', relayoutVisibleDebounced);
-window.addEventListener('scroll',  relayoutVisibleDebounced, { passive: true });
-window.addEventListener('orientationchange', relayoutVisibleDebounced);
 
+// Window/layout changes
+window.addEventListener('resize',  relayoutVisibleRaf);
+window.addEventListener('scroll',  relayoutVisibleRaf, { passive: true });
+window.addEventListener('orientationchange', relayoutVisibleRaf);
 
+// iOS visual viewport changes
 if (window.visualViewport) {
-  visualViewport.addEventListener('resize', relayoutVisibleDebounced);
-  visualViewport.addEventListener('scroll',  relayoutVisibleDebounced, { passive: true });
+  visualViewport.addEventListener('resize', relayoutVisibleRaf);
+  visualViewport.addEventListener('scroll', relayoutVisibleRaf, { passive: true });
 }
+
+// iOS pinch-zoom (Safari)
+document.addEventListener('gesturestart',  relayoutVisibleRaf);
+document.addEventListener('gesturechange', relayoutVisibleRaf);
+document.addEventListener('gestureend',    relayoutVisibleRaf);
+
+// Extra safety: re-layout on page show (BFCache) and when tab becomes visible
+window.addEventListener('pageshow', relayoutVisibleRaf);
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') relayoutVisibleRaf();
+});
 
 
 /* =======================  STATE  ======================= */
