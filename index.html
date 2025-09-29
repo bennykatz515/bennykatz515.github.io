@@ -243,7 +243,8 @@ img { -webkit-user-drag: none; user-drag: none; }
 }
 
 /* TEMP iOS test: disable the big overlay entirely */
-/#waitlistBox { display: none !important; }/
+/* #waitlistBox { display: none !important; } */
+
 
 </style>
 </head>
@@ -420,15 +421,16 @@ function relayoutVisible(){
   computeLayout();
   placeCenter();
 
-  if (state === 'armsIn') {
-    place(armLeft, layout.left);
-    place(armTop,  layout.top);
-    place(armRight,layout.right);
-  } else {
-    place(armLeft, layout.off.left);
-    place(armTop,  layout.off.top);
-    place(armRight,layout.off.right);
-  }
+if (state === 'armsIn' || state === 'animIn') {
+  place(armLeft, layout.left);
+  place(armTop,  layout.top);
+  place(armRight,layout.right);
+} else {
+  place(armLeft, layout.off.left);
+  place(armTop,  layout.off.top);
+  place(armRight,layout.off.right);
+}
+
 
   positionHotzone();
   positionFooter();
@@ -439,7 +441,7 @@ window.addEventListener('resize', relayoutVisible);
 window.addEventListener('scroll',  relayoutVisible, { passive: true });
 
 /* =======================  STATE  ======================= */
-let state = 'boot';          // 'idle' (no arms), 'armsIn' (visible), 'armsOut' (hidden)
+let state = 'boot';          // 'idle', 'animIn', 'armsIn', 'armsOut'
 let locked = false;          // champion lock
 let busy   = false;          // click guard while animating
 let pendingArms = null;      // holds the set used for the next "enter" action
@@ -489,12 +491,24 @@ armRight.style.transform = 'translate(0,0)';
 
 init();
 
+// AFTER init();
 window.addEventListener('resize', () => {
-  computeLayout(); placeCenter(); positionHotzone(); positionFooter();
+  computeLayout();
+  placeCenter();
+  positionHotzone();
+  positionFooter();
 
-
-  if (state === 'armsIn') { place(armLeft, layout.left); place(armTop, layout.top); place(armRight, layout.right); }
+  if (state === 'armsIn' || state === 'animIn') {
+    place(armLeft, layout.left);
+    place(armTop,  layout.top);
+    place(armRight, layout.right);
+  } else {
+    place(armLeft, layout.off.left);
+    place(armTop,  layout.off.top);
+    place(armRight, layout.off.right);
+  }
 });
+
 
 /* =======================  GAME LOGIC  ======================= */
 function pickArms(){
@@ -522,6 +536,9 @@ async function enterArms(arms){
     ]);
   } catch(_) {}
 
+  // >>> ADD THIS LINE HERE <<<
+  state = 'animIn';
+
   // compute deltas from OFF → TARGET
   const dLx = layout.off.left.left  - layout.left.left;
   const dLy = layout.off.left.top   - layout.left.top;
@@ -529,6 +546,8 @@ async function enterArms(arms){
   const dTy = layout.off.top.top    - layout.top.top;
   const dRx = layout.off.right.left - layout.right.left;
   const dRy = layout.off.right.top  - layout.right.top;
+
+  // (rest of the function unchanged…)
 
   // pin each arm at its final box so only transform animates
   place(armLeft,  layout.left);
