@@ -169,42 +169,40 @@ footer {
 /* Champion perimeter frame — hidden per request */
 .champFrame { display:none !important; }
 
-/* ===== Champion congrats text (bigger, stacked, fills screen edges) ===== */
+/* ===== Champion congrats text (5–6s, grows off-screen, lighter outline) ===== */
 #champCongrats{
-  position:fixed; left:50%; top:50%; transform:translate(-50%,-50%) scale(0.7);
+  position:fixed; left:50%; top:50%;
+  transform:translate(-50%,-50%) scale(0.2); /* start tiny */
   z-index:2147483645;
   font-family:"BlackBeard", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-  font-weight:700; 
-  color:#800000;                     /* JS overrides per class */
-  -webkit-text-stroke: 3px #000;     /* thicker outline for huge size */
-  text-shadow: 0 4px 14px rgba(0,0,0,.55);
+  font-weight:700;
+  color:#800000;                 /* JS sets class color */
+  -webkit-text-stroke: 1.5px #000; /* lighter outline */
+  text-shadow: 0 2px 6px rgba(0,0,0,.45); /* softer shadow */
+  pointer-events: none;
   letter-spacing:.01em;
-  line-height: .85;
+  line-height:.85;
   text-align:center;
   white-space:nowrap;
   opacity:0;
 
-  /* Big by default so it “kisses” the edges on most screens */
-  font-size: clamp(28px, 10vw, 22vw);
+  /* Big baseline so it “kisses” edges before we overscale */
+  font-size: clamp(28px, 11vw, 24vw);
 
-  /* Animate: pop in, swell, then fade */
-  animation: champBalloon 2600ms ease-out forwards;
+  /* Duration overridden via inline style, but default here for safety */
+  animation: champBalloon 5600ms ease-in-out forwards;
+  will-change: transform, opacity;
 }
 
-#champCongrats .line{
-  display:block;
-}
-
-/* Optional: make second line ever-so-slightly smaller for balance */
-#champCongrats .line:nth-child(2){
-  font-size: .94em;
-}
+#champCongrats .line{ display:block; }
+/* second line grows via JS to match width; keep a neutral baseline here */
+#champCongrats .line:nth-child(2){ font-size: 1em; }
 
 @keyframes champBalloon{
-  0%   { opacity:0; transform:translate(-50%,-50%) scale(0.6); }
-  20%  { opacity:1; transform:translate(-50%,-50%) scale(1.00); }
-  65%  { opacity:1; transform:translate(-50%,-50%) scale(1.12); }
-  100% { opacity:0; transform:translate(-50%,-50%) scale(1.12); }
+  0%   { opacity:0; transform:translate(-50%,-50%) scale(0.2); }
+  15%  { opacity:1; transform:translate(-50%,-50%) scale(0.8); }
+  70%  { opacity:1; transform:translate(-50%,-50%) scale(1.1); } /* readable phase */
+  100% { opacity:0; transform:translate(-50%,-50%) scale(2.0); } /* push off-screen */
 }
 
 /* ===== Confetti canvas overlay ===== */
@@ -375,13 +373,46 @@ const CHAMP_COLORS = {
   fracker: '#000000'    // Black
 };
 
-function showChampionCongrats(hex){
+function showChampionCongrats(hex, durMs = 5600){
   const el = document.createElement('div');
   el.id = 'champCongrats';
-  el.innerHTML = '<span class="line">CONGRATULATIONS</span><span class="line">CHAMPION</span>';
-  el.style.color = hex;                     // class color
+  el.innerHTML = '<span class="line">CONGRATULATIONS,</span><span class="line">CHAMPION</span>';
+  el.style.color = hex;
+  el.style.animationDuration = durMs + 'ms';  // slow it down to ~5–6s
   document.body.appendChild(el);
-  el.addEventListener('animationend', () => el.remove(), { once:true });
+
+  // Make both lines the same visual width (scale second line by font-size)
+  const cleanup = normalizeCongratsWidth(el);
+  el.addEventListener('animationend', () => {
+    cleanup();
+    el.remove();
+  }, { once:true });
+}
+
+/* Ensures “CONGRATULATIONS” and “CHAMPION” have identical widths */
+function normalizeCongratsWidth(root){
+  const line1 = root.querySelector('.line:nth-child(1)');
+  const line2 = root.querySelector('.line:nth-child(2)');
+  if (!line1 || !line2) return () => {};
+
+  function fit(){
+    // Reset to neutral baseline each time, then measure & scale line 2
+    line1.style.fontSize = '1em';
+    line2.style.fontSize = '1em';
+    // Measure after layout
+    const w1 = line1.getBoundingClientRect().width || 0.0001;
+    const w2 = line2.getBoundingClientRect().width || 0.0001;
+    const factor = w1 / w2;
+    line2.style.fontSize = factor.toFixed(3) + 'em';
+  }
+
+  // Fit now, and re-fit on resize while the element exists
+  fit();
+  const onR = () => fit();
+  window.addEventListener('resize', onR, { passive: true });
+
+  // Return cleanup to remove listener when the animation ends
+  return () => window.removeEventListener('resize', onR);
 }
 
 function fireConfettiSeries(hex, {bursts=6, durationMs=3400, perBurst=120} = {}){
@@ -474,9 +505,11 @@ function onChampionReveal(winnerClass){
   centerCard.style.cursor = 'default';
   centerCard.style.pointerEvents = 'none';
 
-// FX
-fireConfettiSeries(hex, { bursts: 7, durationMs: 4200, perBurst: 140 }); // around-screen, a few seconds
-showChampionCongrats(hex);                                               // huge stacked headline
+// FX (match text duration)
+const D = 5600;
+fireConfettiSeries(hex, { bursts: 9, durationMs: D, perBurst: 130 });
+showChampionCongrats(hex, D);
+
 
 }
 
