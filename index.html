@@ -365,6 +365,15 @@ const preload = (url) => new Promise(res => { const i = new Image(); i.onload = 
 const prewarm = async () => { for (const u of manifest) await preload(u); };
 const setSrc  = (img, file) => { img.src = file; };
 const rc      = (arr) => arr[Math.floor(Math.random()*arr.length)];
+function msFromCSSVar(name, fallbackMs){
+  const raw = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  if (!raw) return fallbackMs;
+  if (raw.endsWith('ms')) return parseFloat(raw);
+  if (raw.endsWith('s'))  return parseFloat(raw) * 1000;
+  const n = parseFloat(raw); return isNaN(n) ? fallbackMs : n;
+}
+const EARLY_RATIO = 0.88; // ~12% early release (raise to .92 if you ever see a snap)
+
 /* ===== Champion FX: Colors, Confetti, Congrats Text, Lockout ===== */
 const CHAMP_COLORS = {
   fighter: '#800000',   // Maroon
@@ -770,7 +779,10 @@ async function enterArms(arms){
     });
   });
 
-  await new Promise(r => setTimeout(r, 2800 + 0)); // matches --arm-in-ms
+const inMs   = msFromCSSVar('--arm-in-ms', 2800);
+const waitIn = isChampion(arms) ? inMs : inMs * EARLY_RATIO; // keep full time for Champion
+await new Promise(r => setTimeout(r, waitIn));
+
   state = 'armsIn';
 }
 
@@ -799,7 +811,9 @@ async function exitArms(){
     armRight.style.opacity= '0';
   });
 
-  await new Promise(r => setTimeout(r, 1200 + 60)); // matches --arm-out-ms
+const outMs = msFromCSSVar('--arm-out-ms', 1200);
+await new Promise(r => setTimeout(r, outMs * EARLY_RATIO));
+
   state = 'armsOut';
 
   // park them at the off boxes (keeps layout consistent if resized mid-fade)
