@@ -339,7 +339,9 @@ img { -webkit-user-drag: none; user-drag: none; }
       </div>
       <div class="copyright">© 2025 Car World Colosseum</div>
     </footer>
+    <audio id="champSfx" src="congratulationschampion.mp4" preload="auto"></audio>
   </div>
+
 
 <script>
 /* =======================  DATA  ======================= */
@@ -359,6 +361,7 @@ const armLeft    = document.getElementById('armLeft');
 const armTop     = document.getElementById('armTop');
 const armRight   = document.getElementById('armRight');
 const champFrame = document.getElementById('champFrame');
+const champSfx  = document.getElementById('champSfx');
 
 /* =======================  HELPERS  ======================= */
 const preload = (url) => new Promise(res => { const i = new Image(); i.onload = i.onerror = res; i.src = url; });
@@ -389,6 +392,17 @@ function showChampionCongrats(hex, durMs = 5600){
   el.style.color = hex;
   el.style.animationDuration = durMs + 'ms';  // slow it down to ~5–6s
   document.body.appendChild(el);
+// kick audio now that the text is on screen
+if (champSfx) {
+  try {
+    champSfx.pause();
+    champSfx.currentTime = 0;
+    champSfx.muted = false;
+    champSfx.volume = 1;
+    champSfx.play().catch(()=>{});
+  } catch (_) {}
+}
+
 
   // Make both lines the same visual width (scale second line by font-size)
   const cleanup = normalizeCongratsWidth(el);
@@ -853,6 +867,16 @@ centerCard.addEventListener('click', async () => {
   if (state === 'idle' || state === 'armsOut') {
     centerCard.classList.remove('clickable');
     if (!pendingArms) pendingArms = pickArms();
+  // Prime audio if this spin will become a champion (unlocked by user gesture)
+  const willBeChampion = isChampion(pendingArms);
+  if (willBeChampion && champSfx) {
+    try {
+      champSfx.muted = true;       // silent while priming
+      champSfx.volume = 0;
+      champSfx.currentTime = 0;
+      champSfx.play().catch(()=>{});
+    } catch (_) {}
+  }
 await enterArms(pendingArms);
 
 if (isChampion(pendingArms)) {
