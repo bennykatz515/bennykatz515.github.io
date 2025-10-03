@@ -392,6 +392,15 @@ function showChampionCongrats(hex, durMs = 5600){
   el.style.color = hex;
   el.style.animationDuration = durMs + 'ms';  // slow it down to ~5–6s
   document.body.appendChild(el);
+// kick audio now that the text is on screen
+if (champSfx) {
+  try {
+    champSfx.pause();
+    champSfx.currentTime = 0;
+    champSfx.muted = false;
+    champSfx.volume = 1;
+    champSfx.play().catch(()=>{});
+  } catch (_) {}
 }
 
 
@@ -516,17 +525,6 @@ function onChampionReveal(winnerClass){
 
   // kill any affordances/pulses immediately
   centerCard.classList.remove('clickable', 'cantClickPulse');
-if (champSfx) {
-  try {
-    // It’s already playing (muted) from the earlier “prime”.
-    // Just jump to the start and make it audible.
-    champSfx.currentTime = 0;
-    champSfx.muted = false;
-    champSfx.volume = 1;
-    // No .play() here — it’s already playing, which avoids new gesture issues.
-  } catch (_) {}
-}
-
   centerCard.style.cursor = 'default';
   centerCard.style.pointerEvents = 'none';
 
