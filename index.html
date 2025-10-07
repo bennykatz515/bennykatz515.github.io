@@ -190,19 +190,16 @@ footer {
   font-size: clamp(28px, 11vw, 24vw);
 
   /* Duration overridden via inline style, but default here for safety */
-  animation: champBalloon 5600ms ease-in-out forwards;
-  will-change: transform, opacity;
+animation: champBalloon 7600ms cubic-bezier(.22,.95,.2,1) forwards;
 }
 
-#champCongrats .line{ display:block; }
-/* second line grows via JS to match width; keep a neutral baseline here */
-#champCongrats .line:nth-child(2){ font-size: 1em; }
-
+/* One gentle overshoot → settle → hold → dissipate */
 @keyframes champBalloon{
-  0%   { opacity:0; transform:translate(-50%,-50%) scale(0.2); }
-  15%  { opacity:1; transform:translate(-50%,-50%) scale(0.8); }
-  70%  { opacity:1; transform:translate(-50%,-50%) scale(1.1); } /* readable phase */
-  100% { opacity:0; transform:translate(-50%,-50%) scale(2.0); } /* push off-screen */
+  0%   { opacity:0; transform:translate(-50%,-50%) scale(0.20); }
+  18%  { opacity:1; transform:translate(-50%,-50%) scale(1.08); } /* arrive w/ a slight overshoot */
+  26%  { opacity:1; transform:translate(-50%,-50%) scale(1.00); } /* settle exactly once */
+  75%  { opacity:1; transform:translate(-50%,-50%) scale(1.00); } /* hold here longer */
+  100% { opacity:0; transform:translate(-50%,-50%) scale(2.00); } /* drift out & fade */
 }
 
 /* ===== Confetti canvas overlay ===== */
@@ -402,7 +399,7 @@ const CHAMP_COLORS = {
   fracker: '#000000'    // Black
 };
 
-function showChampionCongrats(hex, durMs = 5600){
+function showChampionCongrats(hex, durMs = 7600){
   const el = document.createElement('div');
   el.id = 'champCongrats';
   el.innerHTML = '<span class="line">CONGRATULATIONS,</span><span class="line">CHAMPION</span>';
@@ -537,7 +534,7 @@ function onChampionReveal(winnerClass){
   centerCard.style.pointerEvents = 'none';
 
 // FX (match text duration)
-const D = 5600;
+const D = 7600;
 fireConfettiSeries(hex, { bursts: 9, durationMs: D, perBurst: 130 });
 showChampionCongrats(hex, D);
 
