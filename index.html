@@ -875,23 +875,6 @@ centerCard.addEventListener('click', async () => {
   if (state === 'idle' || state === 'armsOut') {
     centerCard.classList.remove('clickable');
     if (!pendingArms) pendingArms = pickArms();
-// start SFX ~150–200ms *before* the flip begins (only for champions)
-const willBeChampion = isChampion(pendingArms);
-let audioTimer = null;
-if (willBeChampion && champSfx) {
-  const inMs = msFromCSSVar('--arm-in-ms', 2800); // champion waits full inMs
-  const LEAD = 180; // <<< tweak 120–250ms to taste
-  audioTimer = setTimeout(() => {
-    try {
-      champSfx.pause();
-      champSfx.currentTime = 0;
-      champSfx.muted = false;
-      champSfx.volume = 1;
-      champSfx.play().catch(()=>{});
-    } catch (_) {}
-  }, Math.max(0, inMs - LEAD));
-}
-
   // Prime audio if this spin will become a champion (unlocked by user gesture)
 
 await enterArms(pendingArms);
@@ -900,11 +883,16 @@ if (isChampion(pendingArms)) {
   locked = true;
   centerCard.classList.remove('clickable', 'cantClickPulse');
 
-// fallback: if early timer didn't fire, kick audio now
-if (champSfx && champSfx.paused) {
-  try { champSfx.play().catch(()=>{}); } catch(_) {}
-}
-
+  // start SFX exactly when the flip begins
+  if (champSfx) {
+    try {
+      champSfx.pause();
+      champSfx.currentTime = 0;
+      champSfx.muted = false;
+      champSfx.volume = 1;
+      champSfx.play().catch(()=>{});
+    } catch (_) {}
+  }
 
   centerCard.classList.add('squish');
   centerCard.addEventListener('transitionend', function onT(e){
